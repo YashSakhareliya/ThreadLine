@@ -1,0 +1,20 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "Threadline is an innovative platform designed to revolutionize the way custom clothing is created and delivered. Moving beyond just suits, it caters to all types of apparel, empowering customers to design their clothes effortlessly from the comfort of their homes",
+  "main": "server.js",
+  "scripts": {
+    "dev": "npm --watch server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YashSakhareliya/ThreadLine.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/YashSakhareliya/ThreadLine/issues"
+  },
+  "homepage": "https://github.com/YashSakhareliya/ThreadLine#readme"
+}
