@@ -1,20 +1,30 @@
 {
-  "name": "backend",
+  "name": "suit-craft",
   "version": "1.0.0",
-  "description": "Threadline is an innovative platform designed to revolutionize the way custom clothing is created and delivered. Moving beyond just suits, it caters to all types of apparel, empowering customers to design their clothes effortlessly from the comfort of their homes",
-  "main": "server.js",
+  "main": "index.js",
   "scripts": {
-    "dev": "npm --watch server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon index.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/YashSakhareliya/ThreadLine.git"
-  },
+  "keywords": [],
   "author": "",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/YashSakhareliya/ThreadLine/issues"
-  },
-  "homepage": "https://github.com/YashSakhareliya/ThreadLine#readme"
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^2.5.1",
+    "cookie": "^1.0.2",
+    "cookie-parser": "^1.4.7",
+    "cookieparser": "^0.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-fileupload": "^1.5.1",
+    "fileupload": "^1.0.0",
+    "fileuploader": "^1.2.7",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.9.5",
+    "validator": "^13.12.0"
+  }
 }
