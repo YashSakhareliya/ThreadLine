@@ -55,6 +55,8 @@ const getFabricsBySeller = async (req, res) => {
 
     try {
         const fabrics = await Fabric.find({ seller: sellerId });
+        // location near shop
+        // shopkeeter post frebic
         res.status(200).json(fabrics);
     } catch (error) {
         console.error('Error while fetching fabrics by seller:', error);
