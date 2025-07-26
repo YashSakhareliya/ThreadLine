@@ -1,8 +1,20 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Scissors } from 'lucide-react';
+import { useSelector, useDispatch } from 'react-redux';
 
 const Navbar = () => {
+  const dispatch = useDispatch();
+  const { user, isLoggedIn, role, loading } = useSelector((state) => state.auth);
+  
+  console.log(user);
+
+  if(loading){
+    return <div>Loading...</div>
+  }
+  const handleLogout = () => {
+    dispatch(logout());
+  };
   return (
     <nav className="bg-white shadow-md fixed w-full z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -21,7 +33,14 @@ const Navbar = () => {
             </div>
           </div>
           <div className="flex items-center">
-            <Link to="/signup" className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700">Login / Sign Up</Link>
+            {isLoggedIn ? (
+              <div className="flex items-center space-x-4">
+                <span className="text-gray-900">Welcome, {user.name}</span>
+                <button onClick={handleLogout} className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700">Logout</button>
+              </div>
+            ) : (
+              <Link to="/signup" className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700">Login / Sign Up</Link>
+            )}
           </div>
         </div>
       </div>

@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Eye, EyeOff } from 'lucide-react';
+import { useDispatch } from 'react-redux';
+import { loginSuccess } from '../redux/slices/authSlice';
 
 const Login = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -30,8 +33,10 @@ const Login = () => {
       const response = await axios.post('http://localhost:4000/api/auth/login', formData);
       localStorage.setItem('token', response.data.token); // Store JWT in localStorage
       alert('Login successful!');
-      navigate('/dashboard'); // Redirect to dashboard or home
+      dispatch(loginSuccess(response.data));
+      navigate('/'); // Redirect to dashboard or home
     } catch (error) {
+      
       setErrors({ submit: 'Invalid email or password. Please try again.' });
     } finally {
       setIsSubmitting(false);

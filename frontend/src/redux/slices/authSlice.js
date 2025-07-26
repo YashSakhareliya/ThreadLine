@@ -1,17 +1,21 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-const initialState = {
-  user: null, // Stores user information
-  token: null, // Stores auth token
-  isLoggedIn: false, // Tracks login status
-  role: null, // Stores the user's role (e.g., customer, tailor, seller)
-  loading: false, // Tracks authentication loading state
-  error: null, // Tracks authentication errors
+const getAuthFromStorage = () => {
+  const storedAuth = localStorage.getItem("auth");
+  if (storedAuth) {
+    const { user, token } = JSON.parse(storedAuth);
+    // If we found data, return it to be used as the initial state.
+    return { user, token, isLoading: false, error: null };
+  }
+  // If no data, return the default empty state.
+  return { user: null, token: null, isLoading: false, error: null };
 };
+
+// const initialState = getAuthFromStorage();
 
 const authSlice = createSlice({
   name: "auth",
-  initialState,
+  initialState: getAuthFromStorage(),
   reducers: {
     loginStart: (state) => {
       state.loading = true;

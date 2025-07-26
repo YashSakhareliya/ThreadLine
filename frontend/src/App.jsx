@@ -1,4 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useDispatch } from "react-redux";
+import { loadFromStorage } from "./redux/slices/authSlice";
 import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -16,6 +18,12 @@ import AddSellerProduct from "./pages/seller/AddProduct";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(loadFromStorage());
+  }, [dispatch]);
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Common Navbar */}
