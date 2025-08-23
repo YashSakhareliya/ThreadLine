@@ -1,83 +1,117 @@
-import React, { useEffect } from "react";
-import { useDispatch } from "react-redux";
-import { loadFromStorage } from "./redux/slices/authSlice";
-import { Routes, Route } from "react-router-dom";
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
-import Home from "./pages/Home";
-import Tailors from "./pages/Tailors";
-import Fabrics from "./pages/Fabrics";
-import SignUp from "./pages/SignUp";
-import Login from "./pages/Login";
-import Cart from "./pages/Cart";
-import AdminDashboard from "./pages/admin/Dashboard";
-import TailorLayout from "./pages/tailor/TailorLayout";
-import AddProduct from "./pages/tailor/AddProduct";
-import SellerLayout from "./pages/seller/SellerLayout";
-import AddSellerProduct from "./pages/seller/AddProduct";
-import ProtectedRoute from "./components/ProtectedRoute";
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Provider } from 'react-redux';
+import { store } from './store';
+import { AuthProvider } from './contexts/AuthContext';
+import { CartProvider } from './contexts/CartContext';
+import Navbar from './components/common/Navbar';
+import Footer from './components/common/Footer';
+import ProtectedRoute from './components/common/ProtectedRoute';
+
+// Pages
+import HomePage from './pages/HomePage';
+import AuthPage from './pages/AuthPage';
+import AllShopsPage from './pages/AllShopsPage';
+import AllFabricsPage from './pages/AllFabricsPage';
+import AllTailorsPage from './pages/AllTailorsPage';
+import TailorPortfolioPage from './pages/TailorPortfolioPage';
+import FabricDetailsPage from './pages/FabricDetailsPage';
+import ShopDetailsPage from './pages/ShopDetailsPage';
+import CartPage from './pages/CartPage';
+import CheckoutPage from './pages/CheckoutPage';
+import CustomerDashboard from './pages/customer/CustomerDashboard';
+import CustomerProfile from './pages/customer/CustomerProfile';
+import TailorDashboard from './pages/tailor/TailorDashboard';
+import ShopDashboard from './pages/shop/ShopDashboard';
+import NotFoundPage from './pages/NotFoundPage';
+import UnauthorizedPage from './pages/UnauthorizedPage';
+
+// Import CSS
+import './index.css';
 
 function App() {
-  const dispatch = useDispatch();
-
-  useEffect(() => {
-    dispatch(loadFromStorage());
-  }, [dispatch]);
-
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Common Navbar */}
-      <Navbar />
-      <main className="flex-grow">
-        <Routes>
-          {/* Admin Routes */}
-          <Route
-            path="/admin/*"
-            element={
-              <ProtectedRoute allowedRoles={["admin"]}>
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Authentication Routes */}
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/login" element={<Login />} />
-
-          {/* Tailor Routes */}
-          <Route
-            path="/tailor"
-            element={
-              <ProtectedRoute allowedRoles={["tailor"]}>
-                <TailorLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="products/add" element={<AddProduct />} />
-          </Route>
-
-          {/* Seller Routes */}
-          <Route
-            path="/seller"
-            element={
-              <ProtectedRoute allowedRoles={["seller"]}>
-                <SellerLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="products/add" element={<AddSellerProduct />} />
-          </Route>
-
-          {/* Main Routes */}
-          <Route path="/" element={<Home />} />
-          <Route path="/tailors" element={<Tailors />} />
-          <Route path="/fabrics" element={<Fabrics />} />
-          <Route path="/cart" element={<Cart />} />
-        </Routes>
-      </main>
-      {/* Common Footer */}
-      <Footer />
-    </div>
+    <Provider store={store}>
+      <AuthProvider>
+        <CartProvider>
+          <Router>
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+              <Navbar />
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<HomePage />} />
+                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/shops" element={<AllShopsPage />} />
+                <Route path="/fabrics" element={<AllFabricsPage />} />
+                <Route path="/tailors" element={<AllTailorsPage />} />
+                <Route path="/tailor/:id" element={<TailorPortfolioPage />} />
+                <Route path="/fabric/:id" element={<FabricDetailsPage />} />
+                <Route path="/shop/:id" element={<ShopDetailsPage />} />
+                <Route path="/unauthorized" element={<UnauthorizedPage />} />
+                
+                {/* Customer Routes */}
+                <Route 
+                  path="/cart" 
+                  element={
+                    <ProtectedRoute allowedRoles={['customer']}>
+                      <CartPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/checkout" 
+                  element={
+                    <ProtectedRoute allowedRoles={['customer']}>
+                      <CheckoutPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/customer/dashboard" 
+                  element={
+                    <ProtectedRoute allowedRoles={['customer']}>
+                      <CustomerDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/customer/profile" 
+                  element={
+                    <ProtectedRoute allowedRoles={['customer']}>
+                      <CustomerProfile />
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* Tailor Routes */}
+                <Route 
+                  path="/tailor/dashboard" 
+                  element={
+                    <ProtectedRoute allowedRoles={['tailor']}>
+                      <TailorDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* Shop Routes */}
+                <Route 
+                  path="/shop/dashboard" 
+                  element={
+                    <ProtectedRoute allowedRoles={['shop']}>
+                      <ShopDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* 404 Route */}
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
+              <Footer />
+            </div>
+          </Router>
+        </CartProvider>
+      </AuthProvider>
+    </Provider>
   );
 }
 

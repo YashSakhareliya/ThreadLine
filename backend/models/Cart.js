@@ -1,22 +1,72 @@
-const mongoose = require("mongoose");
+import mongoose from 'mongoose';
 
-const cartSchema = new mongoose.Schema(
-  {
-    customer: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    items: [
-      {
-        fabric: { type: mongoose.Schema.Types.ObjectId, ref: "Fabric", required: true },
-        quantity: { type: Number, required: true, default: 1 },
-      },
-    ],
-    tailoringService: {
-      tailor: { type: mongoose.Schema.Types.ObjectId, ref: "Tailor" },
-      measurements: { type: String }, // Customer-provided measurements
-      price: { type: Number },
-    },
-    totalPrice: { type: Number, required: true },
+const cartItemSchema = new mongoose.Schema({
+  fabric: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Fabric',
+    required: true
   },
-  { timestamps: true }
-);
+  fabricId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Fabric',
+    required: true
+  },
+  quantity: {
+    type: Number,
+    required: true,
+    min: [1, 'Quantity must be at least 1'],
+    default: 1
+  },
+  price: {
+    type: Number,
+    required: true
+  },
+  subtotal: {
+    type: Number,
+    required: true
+  },
+  addedAt: {
+    type: Date,
+    default: Date.now
+  }
+});
 
-module.exports = mongoose.model("Cart", cartSchema);
+const cartSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    unique: true
+  },
+  items: [cartItemSchema],
+  totalItems: {
+    type: Number,
+    default: 0
+  },
+  totalAmount: {
+    type: Number,
+    default: 0
+  },
+  lastUpdated: {
+    type: Date,
+    default: Date.now
+  }
+}, {
+  timestamps: true
+});
+
+// Calculate totals before saving
+cartSchema.pre('save', function(next) {
+  this.totalItems = this.items.reduce((total, item) => total + item.quantity, 0);
+  this.totalAmount = this.items.reduce((total, item) => total + item.subtotal, 0);
+  this.lastUpdated = new Date();
+  next();
+});
+
+// Update subtotal for each item
+cartItemSchema.pre('save', function(next) {
+  this.subtotal = this.price * this.quantity;
+  next();
+});
+
+export default mongoose.model('Cart', cartSchema);
