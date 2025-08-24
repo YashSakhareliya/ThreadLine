@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setFilters, clearFilters, setInitialTailors } from '../store/slices/tailorsSlice';
 import SearchBar from '../components/common/SearchBar';
 import tailorService from '../services/tailorService';
+import { useNavigate } from 'react-router-dom';
 
 const AllTailorsPage = () => {
   const dispatch = useDispatch();
@@ -15,6 +16,7 @@ const AllTailorsPage = () => {
   const [error, setError] = useState(null);
   const [cities, setCities] = useState([]);
   const [specializations, setSpecializations] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchTailors = async () => {
@@ -330,6 +332,7 @@ const AllTailorsPage = () => {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
+                    onClick={() => navigate(`/tailor/${tailor._id}`)}
                     className="flex-1 bg-gradient-to-r from-tailor-primary to-tailor-secondary text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                   >
                     View Portfolio

@@ -1,8 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Star, MapPin, Phone, Award, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const TailorCard = ({ tailor }) => {
+  const navigate = useNavigate();
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -64,7 +66,7 @@ const TailorCard = ({ tailor }) => {
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          onClick={() => window.location.href = `/tailor/${tailor.id}`}
+          onClick={() => navigate(`/tailor/${tailor.id}`)}
           className="w-full bg-gradient-to-r from-tailor-primary to-tailor-secondary text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
         >
           View Portfolio
