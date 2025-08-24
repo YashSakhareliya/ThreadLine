@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { 
   User, 
@@ -12,9 +12,13 @@ import {
   Trash2,
   TrendingUp,
   Users,
-  Award
+  Award,
+  Loader,
+  Upload,
+  X
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import tailorService from '../../services/tailorService';
 
 const TailorDashboard = () => {
   const { user } = useAuth();
@@ -22,22 +26,72 @@ const TailorDashboard = () => {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [selectedInquiry, setSelectedInquiry] = useState(null);
   const [replyMessage, setReplyMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [tailorProfile, setTailorProfile] = useState(null);
+  const [updating, setUpdating] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef(null);
   
   const [profileData, setProfileData] = useState({
-    bio: 'Master tailor with 15 years of experience in premium stitching',
-    specialization: ['Suits', 'Shirts', 'Traditional Wear'],
-    experience: 15,
-    priceRange: '₹500 - ₹2000',
-    phone: '+91 98765 43220',
-    email: 'rajesh@tailoring.com'
+    bio: '',
+    specialization: [],
+    experience: 0,
+    priceRange: '',
+    phone: '',
+    email: ''
   });
 
-  const [portfolio, setPortfolio] = useState([
-    'https://images.pexels.com/photos/6069120/pexels-photo-6069120.jpeg?auto=compress&cs=tinysrgb&w=800',
-    'https://images.pexels.com/photos/6069121/pexels-photo-6069121.jpeg?auto=compress&cs=tinysrgb&w=800',
-    'https://images.pexels.com/photos/6069122/pexels-photo-6069122.jpeg?auto=compress&cs=tinysrgb&w=800'
-  ]);
+  const [portfolio, setPortfolio] = useState([]);
+  const [newSpecialization, setNewSpecialization] = useState('');
 
+  // Available specializations
+  const availableSpecializations = [
+    'Suits', 'Shirts', 'Traditional Wear', 'Sarees', 'Lehengas', 
+    'Blouses', 'Casual Wear', 'Formal Wear', 'Alterations'
+  ];
+
+  // Fetch tailor profile data
+  useEffect(() => {
+    console.log("in use Effect")
+    console.log(user)
+    const fetchTailorProfile = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // First, get all tailors and find the one owned by current user
+        const response = await tailorService.getAllTailors();
+        const tailors = response.data.data;
+        const userTailor = tailors.find(tailor => tailor.owner === user?._id || tailor.owner?._id === user?.id);
+        if (userTailor) {
+          setTailorProfile(userTailor);
+          setProfileData({
+            bio: userTailor.bio || '',
+            specialization: userTailor.specialization || [],
+            experience: userTailor.experience || 0,
+            priceRange: userTailor.priceRange || '',
+            phone: userTailor.phone || '',
+            email: userTailor.email || ''
+          });
+          setPortfolio(userTailor.portfolio || []);
+        } else {
+          setError('No tailor profile found. Please create your tailor profile first.');
+        }
+      } catch (err) {
+        console.error('Error fetching tailor profile:', err);
+        setError('Failed to fetch tailor profile. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user?._id) {
+      fetchTailorProfile();
+    }
+  }, [user]);
+
+  // Mock data for inquiries (to be replaced with real API later)
   const [inquiries] = useState([
     {
       id: 1,
@@ -73,7 +127,7 @@ const TailorDashboard = () => {
         },
         {
           id: 2,
-          sender: 'Rajesh Kumar',
+          sender: user?.name || 'Tailor',
           message: 'Hello! For wedding suits, my rates start from ₹1500. Would you like to discuss the details?',
           timestamp: '2024-01-19 3:45 PM',
           isCustomer: false
@@ -82,53 +136,116 @@ const TailorDashboard = () => {
     }
   ]);
 
-  const [reviews] = useState([
-    {
-      id: 1,
-      customerName: 'Priya Sharma',
-      rating: 5,
-      comment: 'Excellent work on my wedding lehenga. The stitching quality is outstanding and the fit is perfect. Highly recommended!',
-      date: '2024-01-15',
-      images: ['https://images.pexels.com/photos/6069126/pexels-photo-6069126.jpeg?auto=compress&cs=tinysrgb&w=400']
-    },
-    {
-      id: 2,
-      customerName: 'Amit Kumar',
-      rating: 4,
-      comment: 'Great attention to detail. The suit came out exactly as I wanted. Will definitely come back for more work.',
-      date: '2024-01-10',
-      images: []
-    },
-    {
-      id: 3,
-      customerName: 'Sneha Patel',
-      rating: 5,
-      comment: 'Amazing craftsmanship! The traditional wear was beautifully made with intricate details.',
-      date: '2024-01-05',
-      images: ['https://images.pexels.com/photos/6069127/pexels-photo-6069127.jpeg?auto=compress&cs=tinysrgb&w=400']
+  const handleProfileSave = async () => {
+    if (!tailorProfile?._id) return;
+    
+    try {
+      setUpdating(true);
+      await tailorService.updateTailor(tailorProfile._id, profileData);
+      
+      // Update local state
+      setTailorProfile(prev => ({
+        ...prev,
+        ...profileData
+      }));
+      
+      setIsEditingProfile(false);
+      setError(null);
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      setError('Failed to update profile. Please try again.');
+    } finally {
+      setUpdating(false);
     }
-  ]);
+  };
 
-  const stats = [
-    { label: 'Profile Views', value: 245, icon: Eye, color: 'text-blue-600' },
-    { label: 'Customer Inquiries', value: 12, icon: MessageCircle, color: 'text-green-600' },
-    { label: 'Average Rating', value: '4.9', icon: Star, color: 'text-yellow-600' },
-    { label: 'Completed Projects', value: 89, icon: Award, color: 'text-purple-600' }
-  ];
-
-  const handleProfileSave = () => {
-    console.log('Saving profile:', profileData);
-    setIsEditingProfile(false);
+  // Handle image upload to Cloudinary
+  const uploadImageToCloudinary = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'threadline_portfolio'); // You'll need to set this up in Cloudinary
+    
+    try {
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/your-cloud-name/image/upload`, // Replace with your cloud name
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+      
+      const data = await response.json();
+      return data.secure_url;
+    } catch (error) {
+      console.error('Error uploading to Cloudinary:', error);
+      throw error;
+    }
   };
 
   const handleAddPortfolioImage = () => {
-    // In a real app, this would open a file picker
-    const newImage = 'https://images.pexels.com/photos/6069123/pexels-photo-6069123.jpeg?auto=compress&cs=tinysrgb&w=800';
-    setPortfolio([...portfolio, newImage]);
+    fileInputRef.current?.click();
   };
 
-  const handleRemovePortfolioImage = (index) => {
-    setPortfolio(portfolio.filter((_, i) => i !== index));
+  const handleFileSelect = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError('Please select a valid image file.');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image size should be less than 5MB.');
+      return;
+    }
+
+    try {
+      setUploadingImage(true);
+      setError(null);
+
+      // For now, create a local URL preview (replace with Cloudinary upload)
+      const imageUrl = URL.createObjectURL(file);
+      
+      // In production, uncomment this and configure Cloudinary:
+      // const imageUrl = await uploadImageToCloudinary(file);
+      
+      const updatedPortfolio = [...portfolio, imageUrl];
+      setPortfolio(updatedPortfolio);
+      
+      // Update backend
+      if (tailorProfile?._id) {
+        await tailorService.updateTailor(tailorProfile._id, { portfolio: updatedPortfolio });
+      }
+    } catch (err) {
+      console.error('Error uploading image:', err);
+      setError('Failed to upload image. Please try again.');
+    } finally {
+      setUploadingImage(false);
+      // Reset file input
+      event.target.value = '';
+    }
+  };
+
+  const handleRemovePortfolioImage = async (index) => {
+    try {
+      const updatedPortfolio = portfolio.filter((_, i) => i !== index);
+      setPortfolio(updatedPortfolio);
+      
+      // Update backend
+      if (tailorProfile?._id) {
+        await tailorService.updateTailor(tailorProfile._id, { portfolio: updatedPortfolio });
+      }
+    } catch (err) {
+      console.error('Error updating portfolio:', err);
+      setError('Failed to remove image. Please try again.');
+    }
   };
 
   const handleSendReply = () => {
@@ -153,13 +270,62 @@ const TailorDashboard = () => {
     }
   };
 
-  const tabs = [
-    { id: 'overview', name: 'Overview', icon: TrendingUp },
-    { id: 'profile', name: 'Profile Management', icon: User },
-    { id: 'portfolio', name: 'Portfolio', icon: Camera },
-    { id: 'inquiries', name: 'Customer Inquiries', icon: MessageCircle },
-    { id: 'reviews', name: 'Customer Reviews', icon: Star }
+  const handleAddSpecialization = () => {
+    if (newSpecialization && !profileData.specialization.includes(newSpecialization)) {
+      setProfileData({
+        ...profileData,
+        specialization: [...profileData.specialization, newSpecialization]
+      });
+      setNewSpecialization('');
+    }
+  };
+
+  const handleRemoveSpecialization = (skillToRemove) => {
+    setProfileData({
+      ...profileData,
+      specialization: profileData.specialization.filter(skill => skill !== skillToRemove)
+    });
+  };
+
+  const stats = [
+    { label: 'Profile Views', value: 245, icon: Eye, color: 'text-blue-600' },
+    { label: 'Customer Inquiries', value: inquiries.length, icon: MessageCircle, color: 'text-green-600' },
+    { label: 'Average Rating', value: tailorProfile?.rating?.toFixed(1) || '0.0', icon: Star, color: 'text-yellow-600' },
+    { label: 'Completed Projects', value: tailorProfile?.completedProjects || 0, icon: Award, color: 'text-purple-600' }
   ];
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen pt-20 flex items-center justify-center">
+        <div className="text-center">
+          <Loader className="w-8 h-8 animate-spin text-tailor-primary mx-auto mb-4" />
+          <p className="text-slate-600">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error && !tailorProfile) {
+    return (
+      <div className="min-h-screen pt-20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 mb-4">
+            <User className="w-16 h-16 mx-auto mb-2" />
+            <p className="text-lg font-semibold">Profile Not Found</p>
+          </div>
+          <p className="text-slate-600 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="btn-primary"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pt-20">
@@ -174,8 +340,13 @@ const TailorDashboard = () => {
             Tailor Dashboard
           </h1>
           <p className="text-slate-600">
-            Manage your profile, showcase your work, and connect with customers
+            Welcome back, {tailorProfile?.name || user?.name}! Manage your profile, showcase your work, and connect with customers
           </p>
+          {error && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm">{error}</p>
+            </div>
+          )}
         </motion.div>
 
         {/* Tabs */}
@@ -186,7 +357,13 @@ const TailorDashboard = () => {
           className="mb-8"
         >
           <div className="flex space-x-1 bg-slate-100 p-1 rounded-xl overflow-x-auto">
-            {tabs.map((tab) => (
+            {[
+              { id: 'overview', name: 'Overview', icon: TrendingUp },
+              { id: 'profile', name: 'Profile Management', icon: User },
+              { id: 'portfolio', name: 'Portfolio', icon: Camera },
+              { id: 'inquiries', name: 'Customer Inquiries', icon: MessageCircle },
+              { id: 'reviews', name: 'Customer Reviews', icon: Star }
+            ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
@@ -278,10 +455,19 @@ const TailorDashboard = () => {
                 <h2 className="text-2xl font-bold text-slate-800">Profile Management</h2>
                 <button
                   onClick={() => isEditingProfile ? handleProfileSave() : setIsEditingProfile(true)}
-                  className="flex items-center space-x-2 bg-gradient-to-r from-tailor-primary to-tailor-secondary text-white px-4 py-2 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                  disabled={updating}
+                  className="flex items-center space-x-2 bg-gradient-to-r from-tailor-primary to-tailor-secondary text-white px-4 py-2 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
                 >
-                  {isEditingProfile ? <Save className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
-                  <span>{isEditingProfile ? 'Save Changes' : 'Edit Profile'}</span>
+                  {updating ? (
+                    <Loader className="w-4 h-4 animate-spin" />
+                  ) : isEditingProfile ? (
+                    <Save className="w-4 h-4" />
+                  ) : (
+                    <Edit className="w-4 h-4" />
+                  )}
+                  <span>
+                    {updating ? 'Saving...' : isEditingProfile ? 'Save Changes' : 'Edit Profile'}
+                  </span>
                 </button>
               </div>
 
@@ -296,6 +482,7 @@ const TailorDashboard = () => {
                     disabled={!isEditingProfile}
                     rows={4}
                     className="input-field resize-none disabled:bg-slate-50 disabled:cursor-not-allowed"
+                    maxLength={1000}
                   />
                 </div>
 
@@ -307,9 +494,10 @@ const TailorDashboard = () => {
                     <input
                       type="number"
                       value={profileData.experience}
-                      onChange={(e) => setProfileData({...profileData, experience: parseInt(e.target.value)})}
+                      onChange={(e) => setProfileData({...profileData, experience: parseInt(e.target.value) || 0})}
                       disabled={!isEditingProfile}
                       className="input-field disabled:bg-slate-50 disabled:cursor-not-allowed"
+                      min="0"
                     />
                   </div>
 
@@ -323,6 +511,7 @@ const TailorDashboard = () => {
                       onChange={(e) => setProfileData({...profileData, priceRange: e.target.value})}
                       disabled={!isEditingProfile}
                       className="input-field disabled:bg-slate-50 disabled:cursor-not-allowed"
+                      placeholder="e.g., ₹500 - ₹2000"
                     />
                   </div>
 
@@ -357,15 +546,49 @@ const TailorDashboard = () => {
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
                     Specialization
                   </label>
-                  <div className="flex flex-wrap gap-2">
-                    {profileData.specialization.map((skill, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 bg-gradient-to-r from-tailor-primary/10 to-tailor-secondary/10 text-tailor-primary rounded-full text-sm"
-                      >
-                        {skill}
-                      </span>
-                    ))}
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      {(profileData.specialization || []).map((skill, index) => (
+                        <span
+                          key={index}
+                          className="flex items-center px-3 py-1 bg-gradient-to-r from-tailor-primary/10 to-tailor-secondary/10 text-tailor-primary rounded-full text-sm"
+                        >
+                          {skill}
+                          {isEditingProfile && (
+                            <button
+                              onClick={() => handleRemoveSpecialization(skill)}
+                              className="ml-2 text-red-500 hover:text-red-700"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+                    
+                    {isEditingProfile && (
+                      <div className="flex space-x-2">
+                        <select
+                          value={newSpecialization}
+                          onChange={(e) => setNewSpecialization(e.target.value)}
+                          className="flex-1 input-field"
+                        >
+                          <option value="">Select a specialization</option>
+                          {availableSpecializations
+                            .filter(spec => !profileData.specialization.includes(spec))
+                            .map(spec => (
+                              <option key={spec} value={spec}>{spec}</option>
+                            ))}
+                        </select>
+                        <button
+                          onClick={handleAddSpecialization}
+                          disabled={!newSpecialization}
+                          className="px-4 py-2 bg-tailor-primary text-white rounded-lg hover:bg-tailor-secondary transition-colors duration-300 disabled:opacity-50"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -378,12 +601,26 @@ const TailorDashboard = () => {
                 <h2 className="text-2xl font-bold text-slate-800">Portfolio Management</h2>
                 <button
                   onClick={handleAddPortfolioImage}
-                  className="flex items-center space-x-2 bg-gradient-to-r from-tailor-primary to-tailor-secondary text-white px-4 py-2 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                  disabled={uploadingImage}
+                  className="flex items-center space-x-2 bg-gradient-to-r from-tailor-primary to-tailor-secondary text-white px-4 py-2 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
                 >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Image</span>
+                  {uploadingImage ? (
+                    <Loader className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Upload className="w-4 h-4" />
+                  )}
+                  <span>{uploadingImage ? 'Uploading...' : 'Upload Image'}</span>
                 </button>
               </div>
+
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {portfolio.map((image, index) => (
@@ -409,6 +646,20 @@ const TailorDashboard = () => {
                     </div>
                   </motion.div>
                 ))}
+                
+                {portfolio.length === 0 && (
+                  <div className="col-span-full text-center py-12">
+                    <Camera className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-slate-600 mb-2">No portfolio images yet</h3>
+                    <p className="text-slate-500 mb-4">Upload your best work to showcase your skills</p>
+                    <button
+                      onClick={handleAddPortfolioImage}
+                      className="btn-primary"
+                    >
+                      Upload Your First Image
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -515,54 +766,64 @@ const TailorDashboard = () => {
                 <h2 className="text-2xl font-bold text-slate-800">Customer Reviews</h2>
                 <div className="flex items-center space-x-2">
                   <Star className="w-5 h-5 text-yellow-500 fill-current" />
-                  <span className="text-lg font-semibold">4.9</span>
-                  <span className="text-slate-500">({reviews.length} reviews)</span>
+                  <span className="text-lg font-semibold">{tailorProfile?.rating?.toFixed(1) || '0.0'}</span>
+                  <span className="text-slate-500">({tailorProfile?.totalReviews || 0} reviews)</span>
                 </div>
               </div>
 
               <div className="space-y-6">
-                {reviews.map((review) => (
-                  <motion.div
-                    key={review.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="border-b border-slate-200 pb-6 last:border-b-0"
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h4 className="font-semibold text-slate-800">{review.customerName}</h4>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <div className="flex">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`w-4 h-4 ${
-                                  i < review.rating 
-                                    ? 'text-yellow-500 fill-current' 
-                                    : 'text-slate-300'
-                                }`}
-                              />
-                            ))}
+                {tailorProfile?.reviews && tailorProfile.reviews.length > 0 ? (
+                  tailorProfile.reviews.map((review) => (
+                    <motion.div
+                      key={review._id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="border-b border-slate-200 pb-6 last:border-b-0"
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h4 className="font-semibold text-slate-800">{review.customerName}</h4>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <div className="flex">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={`w-4 h-4 ${
+                                    i < review.rating 
+                                      ? 'text-yellow-500 fill-current' 
+                                      : 'text-slate-300'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-sm text-slate-500">
+                              {new Date(review.date).toLocaleDateString()}
+                            </span>
                           </div>
-                          <span className="text-sm text-slate-500">{review.date}</span>
                         </div>
                       </div>
-                    </div>
-                    <p className="text-slate-600 mb-3">{review.comment}</p>
-                    {review.images && review.images.length > 0 && (
-                      <div className="flex space-x-2">
-                        {review.images.map((image, index) => (
-                          <img
-                            key={index}
-                            src={image}
-                            alt={`Review ${index + 1}`}
-                            className="w-16 h-16 object-cover rounded-lg"
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
+                      <p className="text-slate-600 mb-3">{review.comment}</p>
+                      {review.images && review.images.length > 0 && (
+                        <div className="flex space-x-2">
+                          {review.images.map((image, index) => (
+                            <img
+                              key={index}
+                              src={image}
+                              alt={`Review ${index + 1}`}
+                              className="w-16 h-16 object-cover rounded-lg"
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </motion.div>
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <Star className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+                    <p className="text-slate-600">No reviews yet</p>
+                    <p className="text-slate-500 text-sm">Reviews from customers will appear here</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
