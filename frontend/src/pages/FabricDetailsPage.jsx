@@ -19,14 +19,15 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useCart } from '../contexts/CartContext';
+import { addToCart } from '../store/slices/cartSlice';
+import { useDispatch } from 'react-redux';
 import fabricService from '../services/fabricService';
 import shopService from '../services/shopService';
 
 const FabricDetailsPage = () => {
   const { id } = useParams();
   const { user } = useAuth();
-  const { addToCart } = useCart();
+  const dispatch = useDispatch();
   const [fabric, setFabric] = useState(null);
   const [shop, setShop] = useState(null);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -44,8 +45,14 @@ const FabricDetailsPage = () => {
         setFabric(fabricData);
         
         if (fabricData.shop) {
-          const shopRes = await shopService.getShopById(fabricData.shop);
-          setShop(shopRes.data.data);
+          // If populated, use the object directly; otherwise fetch by ID
+          if (typeof fabricData.shop === 'object' && fabricData.shop._id) {
+            setShop(fabricData.shop);
+          } else {
+            const shopId = String(fabricData.shop);
+            const shopRes = await shopService.getShopById(shopId);
+            setShop(shopRes.data.data);
+          }
         }
       } catch (error) {
         console.error('Failed to fetch fabric details:', error);
@@ -57,7 +64,7 @@ const FabricDetailsPage = () => {
 
   const handleAddToCart = () => {
     if (user && user.role === 'customer' && fabric) {
-      addToCart(fabric, quantity);
+      dispatch(addToCart({ fabric, quantity: 1 }));
     }
   };
 

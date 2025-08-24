@@ -29,6 +29,26 @@ connectDB();
 
 const app = express();
 
+// CORS configuration (must be before any other middleware/routes)
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://threadline.com', 'https://www.threadline.com'] 
+    : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174'],
+  credentials: true,
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization']
+}));
+
+// Explicitly handle preflight
+app.options('*', cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://threadline.com', 'https://www.threadline.com'] 
+    : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174'],
+  credentials: true,
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization']
+}));
+
 // Security middleware
 app.use(helmet());
 
@@ -42,14 +62,8 @@ const limiter = rateLimit({
   }
 });
 app.use('/api/', limiter);
-
-// CORS configuration
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://threadline.com', 'https://www.threadline.com'] 
-    : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174'],
-  credentials: true
-}));
+console.log(process.env.NODE_ENV)
+// CORS moved above to ensure headers are present on all responses (including preflight)
 
 // Compression middleware
 app.use(compression());

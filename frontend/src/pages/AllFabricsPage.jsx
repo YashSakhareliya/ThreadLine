@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Filter, Grid, List, Search, Palette, Package, Ruler, ShoppingCart, Loader } from 'lucide-react';
+import { Filter, Grid, List, Search, Loader } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setInitialFabrics, setFilters, clearFilters } from '../store/slices/fabricsSlice';
-import { addToCart } from '../store/slices/cartSlice';
-import { useAuth } from '../contexts/AuthContext';
 import SearchBar from '../components/common/SearchBar';
 import fabricService from '../services/fabricService';
+import FabricCard from '../components/cards/FabricCard';
 
 const AllFabricsPage = () => {
   const dispatch = useDispatch();
   const { filteredFabrics, filters } = useSelector(state => state.fabrics);
-  const { user } = useAuth();
   const [viewMode, setViewMode] = useState('grid');
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -49,13 +47,6 @@ const AllFabricsPage = () => {
       // Add text search logic here if needed
     }));
   };
-
-  const handleAddToCart = (fabric) => {
-    if (user && user.role === 'customer') {
-      dispatch(addToCart({ fabric, quantity: 1 }));
-    }
-  };
-
 
   return (
     <div className="min-h-screen pt-20">
@@ -246,78 +237,7 @@ const AllFabricsPage = () => {
             : 'grid-cols-1'
         }`}>
           {filteredFabrics.map((fabric, index) => (
-            <motion.div
-              key={fabric._id || fabric.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              whileHover={{ y: -5 }}
-              className="card group"
-            >
-              <div className="relative overflow-hidden rounded-xl mb-4">
-                <img
-                  src={fabric.image || fabric.images?.[0] || 'https://via.placeholder.com/300x200?text=No+Image'}
-                  alt={fabric.name}
-                  className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute top-4 right-4 glass px-3 py-1 rounded-full">
-                  <span className="text-sm font-bold text-slate-700">₹{fabric.price}</span>
-                </div>
-                {fabric.stock < 10 && (
-                  <div className="absolute top-4 left-4 bg-red-500 text-white px-2 py-1 rounded-full text-xs">
-                    Low Stock
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <h3 className="text-lg font-bold text-slate-800 group-hover:text-customer-primary transition-colors duration-300">
-                  {fabric.name}
-                </h3>
-                
-                <p className="text-slate-600 text-sm line-clamp-2">
-                  {fabric.description}
-                </p>
-
-                <div className="text-sm text-slate-600">
-                  <p className="font-semibold">Shop: {fabric.shop?.name || 'Unknown Shop'}</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="flex items-center space-x-2 text-slate-600">
-                    <Palette className="w-4 h-4 text-customer-primary" />
-                    <span>{fabric.color}</span>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2 text-slate-600">
-                    <Package className="w-4 h-4 text-customer-primary" />
-                    <span>{fabric.stock} units</span>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2 text-slate-600">
-                    <Ruler className="w-4 h-4 text-customer-primary" />
-                    <span>{fabric.specifications?.width || 'N/A'}</span>
-                  </div>
-                  
-                  <div className="text-slate-600">
-                    <span className="font-semibold">{fabric.material}</span>
-                  </div>
-                </div>
-
-                {user && user.role === 'customer' && (
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => handleAddToCart(fabric)}
-                    disabled={fabric.stock === 0}
-                    className="w-full flex items-center justify-center space-x-2 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ShoppingCart className="w-4 h-4" />
-                    <span>{fabric.stock === 0 ? 'Out of Stock' : 'Add to Cart'}</span>
-                  </motion.button>
-                )}
-              </div>
-            </motion.div>
+            <FabricCard key={fabric._id || fabric.id} fabric={fabric} />
           ))}
         </div>
 

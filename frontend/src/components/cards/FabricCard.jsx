@@ -2,16 +2,17 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Package, Palette, Ruler } from 'lucide-react';
-import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useDispatch } from 'react-redux';
+import { addToCart } from '../../store/slices/cartSlice';
 
 const FabricCard = ({ fabric }) => {
-  const { addToCart } = useCart();
+  const dispatch = useDispatch();
   const { user } = useAuth();
 
   const handleAddToCart = () => {
     if (user && user.role === 'customer') {
-      addToCart(fabric);
+      dispatch(addToCart({ fabric, quantity: 1 }));
     }
   };
 
@@ -24,7 +25,7 @@ const FabricCard = ({ fabric }) => {
     >
       <div className="relative overflow-hidden rounded-xl mb-4">
         <img
-          src={fabric.image || '/placeholder.svg'}
+          src={fabric.image || fabric.images?.[0] || 'https://via.placeholder.com/300x200?text=No+Image'}
           alt={fabric.name}
           className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500"
         />
