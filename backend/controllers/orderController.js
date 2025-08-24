@@ -320,15 +320,11 @@ export const cancelOrder = async (req, res) => {
 export const getShopOrders = async (req, res) => {
   try {
     const { status, page = 1, limit = 10, sortBy = 'createdAt' } = req.query;
+    const shopId = req.params.id; // Use 'id' instead of 'shopId' to match route parameter
 
-    // Build query to find orders containing items from this shop
-    let matchQuery = {
-      'items.fabric': { $exists: true }
-    };
-    
-    if (status) {
-      matchQuery.status = status;
-    }
+    // Convert shopId to ObjectId for proper MongoDB comparison
+    const mongoose = await import('mongoose');
+    const shopObjectId = new mongoose.default.Types.ObjectId(shopId);
 
     // Aggregate to get orders that contain fabrics from this shop
     const orders = await Order.aggregate([
@@ -344,7 +340,7 @@ export const getShopOrders = async (req, res) => {
       // Filter orders that have fabrics from this shop
       {
         $match: {
-          'fabricDetails.shop': { $in: [req.params.shopId] }
+          'fabricDetails.shop': shopObjectId
         }
       },
       // Add status filter if provided
@@ -352,7 +348,7 @@ export const getShopOrders = async (req, res) => {
       // Sort
       { $sort: { [sortBy]: -1 } },
       // Pagination
-      { $skip: (page - 1) * limit },
+      { $skip: (page - 1) * parseInt(limit) },
       { $limit: parseInt(limit) },
       // Lookup customer details
       {
@@ -391,7 +387,7 @@ export const getShopOrders = async (req, res) => {
       },
       {
         $match: {
-          'fabricDetails.shop': { $in: [req.params.shopId] },
+          'fabricDetails.shop': shopObjectId,
           ...(status ? { status } : {})
         }
       },

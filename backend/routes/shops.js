@@ -8,6 +8,7 @@ import {
   deleteShop,
   getShopFabrics
 } from '../controllers/shopController.js';
+import { getShopOrders } from '../controllers/orderController.js';
 import { protect, authorize, checkOwnership } from '../middleware/auth.js';
 import Shop from '../models/Shop.js';
 
@@ -37,5 +38,8 @@ router.route('/:id')
 
 router.route('/:id/fabrics')
   .get(getShopFabrics);
+
+router.route('/:id/orders')
+  .get(protect, authorize('shop'), getShopOrders);
 
 export default router;
