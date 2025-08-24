@@ -31,7 +31,13 @@ export const AuthProvider = ({ children }) => {
         dispatch(loginStart());
         try {
           const res = await authService.getCurrentUser();
-          dispatch(loginSuccess(res.data.data || res.data));
+          // Backend shape: { success, data: { user } }
+          const loadedUser = res?.data?.user || res?.user;
+          if (loadedUser) {
+            dispatch(loginSuccess(loadedUser));
+          } else {
+            throw new Error('Invalid auth response');
+          }
         } catch (err) {
           dispatch(loginFailure(err.message));
           authService.logout(); // Clear invalid token
