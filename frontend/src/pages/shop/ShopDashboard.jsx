@@ -104,7 +104,6 @@ const ShopDashboard = () => {
   };
 
   const handleEditFabric = (fabric) => {
-    console.log(fabric)
     setEditingFabric(fabric);
     setNewFabric({
       name: fabric.name,
@@ -185,13 +184,11 @@ const ShopDashboard = () => {
         setLoading(true);
         // Get user's shop - find shop owned by current user
         const shopsResponse = await shopService.getAllShops({ limit: 100 });
-        console.log(shopsResponse)
         const userShop = shopsResponse.data.data.find(s => {
           // Handle both populated and non-populated owner fields
           const ownerId = s.owner?._id || s.owner;
           return ownerId === user._id;
         });
-        console.log(user)
         if (userShop) {
           setShop(userShop);
           setShopDetails({
