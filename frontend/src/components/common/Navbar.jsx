@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Menu, 
-  X, 
-  ShoppingCart, 
-  User, 
-  LogOut, 
+import {
+  Menu,
+  X,
+  ShoppingCart,
+  User,
+  LogOut,
   Search,
   Scissors,
   Store,
@@ -57,7 +57,7 @@ const Navbar = () => {
   };
 
   return (
-    <motion.nav 
+    <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/20"
@@ -80,32 +80,37 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link 
-              to="/shops" 
-              className="text-slate-700 hover:text-customer-primary transition-colors duration-300"
-            >
-              All Shops
-            </Link>
-            
-            <Link 
-              to="/fabrics" 
-              className="text-slate-700 hover:text-customer-primary transition-colors duration-300"
-            >
-              All Fabrics
-            </Link>
-            
-            <Link 
-              to="/tailors" 
-              className="text-slate-700 hover:text-customer-primary transition-colors duration-300"
-            >
-              Find Tailors
-            </Link>
-            
+            {(!user || user.role === 'customer') && (
+              <>
+                <Link
+                  to="/shops"
+                  className="text-slate-700 hover:text-customer-primary transition-colors duration-300"
+                >
+                  All Shops
+                </Link>
+
+                <Link
+                  to="/fabrics"
+                  className="text-slate-700 hover:text-customer-primary transition-colors duration-300"
+                >
+                  All Fabrics
+                </Link>
+
+                <Link
+                  to="/tailors"
+                  className="text-slate-700 hover:text-customer-primary transition-colors duration-300"
+                >
+                  Find Tailors
+                </Link>
+              </>
+            )}
+
+
             {user ? (
               <div className="flex items-center space-x-4">
                 {user.role === 'customer' && (
-                  <Link 
-                    to="/cart" 
+                  <Link
+                    to="/cart"
                     className="relative p-2 text-slate-700 hover:text-customer-primary transition-colors duration-300"
                   >
                     <ShoppingCart className="w-6 h-6" />
@@ -120,7 +125,7 @@ const Navbar = () => {
                     )}
                   </Link>
                 )}
-                
+
                 <div className="relative">
                   <motion.button
                     whileHover={{ scale: 1.05 }}
@@ -130,7 +135,7 @@ const Navbar = () => {
                     {getRoleIcon(user.role)}
                     <span className="capitalize">{user.role}</span>
                   </motion.button>
-                  
+
                   <AnimatePresence>
                     {showUserMenu && (
                       <motion.div
@@ -208,30 +213,35 @@ const Navbar = () => {
             className="md:hidden glass border-t border-white/20"
           >
             <div className="px-4 py-4 space-y-4">
-              <Link 
-                to="/shops" 
-                className="block text-slate-700 hover:text-customer-primary transition-colors duration-300"
-                onClick={() => setIsOpen(false)}
-              >
-                All Shops
-              </Link>
-              
-              <Link 
-                to="/fabrics" 
-                className="block text-slate-700 hover:text-customer-primary transition-colors duration-300"
-                onClick={() => setIsOpen(false)}
-              >
-                All Fabrics
-              </Link>
-              
-              <Link 
-                to="/tailors" 
-                className="block text-slate-700 hover:text-customer-primary transition-colors duration-300"
-                onClick={() => setIsOpen(false)}
-              >
-                Find Tailors
-              </Link>
-              
+              {(!user || user.role === 'customer') && (
+                <>
+                  <Link
+                    to="/shops"
+                    className="block text-slate-700 hover:text-customer-primary transition-colors duration-300"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    All Shops
+                  </Link>
+
+                  <Link
+                    to="/fabrics"
+                    className="block text-slate-700 hover:text-customer-primary transition-colors duration-300"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    All Fabrics
+                  </Link>
+
+                  <Link
+                    to="/tailors"
+                    className="block text-slate-700 hover:text-customer-primary transition-colors duration-300"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Find Tailors
+                  </Link>
+                </>
+              )}
+
+
               {user ? (
                 <>
                   <Link
