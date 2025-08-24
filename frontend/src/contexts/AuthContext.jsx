@@ -51,7 +51,6 @@ export const AuthProvider = ({ children }) => {
     dispatch(loginStart());
     try {
       const loginRes = await authService.login(email, password);
-      // User data is already in the login response
       dispatch(loginSuccess(loginRes.data.user));
       return loginRes.data.user;
     } catch (error) {
@@ -65,7 +64,6 @@ export const AuthProvider = ({ children }) => {
     dispatch(loginStart());
     try {
       const registerRes = await authService.register(userData);
-      // User data is already in the register response
       dispatch(loginSuccess(registerRes.data.user));
       return registerRes.data.user;
     } catch (error) {
