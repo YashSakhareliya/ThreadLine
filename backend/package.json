@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js",
+    "dev": "node --watch server.js",
     "test": "jest",
     "seed": "node scripts/seedData.js"
   },
@@ -32,7 +32,8 @@
     "mongoose": "^8.0.3",
     "multer": "^1.4.5-lts.1",
     "multer-storage-cloudinary": "^4.0.0",
-    "nodemailer": "^7.0.5"
+    "nodemailer": "^7.0.5",
+    "serve-favicon": "^2.5.1"
   },
   "devDependencies": {
     "jest": "^29.7.0",

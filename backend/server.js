@@ -1,5 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import path from 'path';
+import favicon from "serve-favicon";
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -55,6 +57,9 @@ app.use(compression());
 // Body parser middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+const __dirname = path.resolve();
+// app.use(express.static(path.join(__dirname, "public")));
+// app.use(favicon(path.join(__dirname, "public", "favicon.ico")));
 
 // API Routes
 app.use('/api/v1/auth', authRoutes);

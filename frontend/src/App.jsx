@@ -41,12 +41,6 @@ function App() {
                 {/* Public Routes */}
                 <Route path="/" element={<HomePage />} />
                 <Route path="/auth" element={<AuthPage />} />
-                <Route path="/shops" element={<AllShopsPage />} />
-                <Route path="/fabrics" element={<AllFabricsPage />} />
-                <Route path="/tailors" element={<AllTailorsPage />} />
-                <Route path="/tailor/:id" element={<TailorPortfolioPage />} />
-                <Route path="/fabric/:id" element={<FabricDetailsPage />} />
-                <Route path="/shop/:id" element={<ShopDetailsPage />} />
                 <Route path="/unauthorized" element={<UnauthorizedPage />} />
                 
                 {/* Customer Routes */}
@@ -55,6 +49,54 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={['customer']}>
                       <CartPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/shops" 
+                  element={
+                    <ProtectedRoute allowedRoles={['customer']}>
+                      <AllShopsPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/fabrics" 
+                  element={
+                    <ProtectedRoute allowedRoles={['customer']}>
+                      <AllFabricsPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/tailors" 
+                  element={
+                    <ProtectedRoute allowedRoles={['customer']}>
+                      <AllTailorsPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/tailor/:id" 
+                  element={
+                    <ProtectedRoute allowedRoles={['customer']}>
+                      <TailorPortfolioPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/fabric/:id" 
+                  element={
+                    <ProtectedRoute allowedRoles={['customer']}>
+                      <FabricDetailsPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/shop/:id" 
+                  element={
+                    <ProtectedRoute allowedRoles={['customer']}>
+                      <ShopDetailsPage />
                     </ProtectedRoute>
                   } 
                 />
