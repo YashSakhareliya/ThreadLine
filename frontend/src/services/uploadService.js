@@ -4,7 +4,7 @@ const uploadSingleImage = (imageFile) => {
   const formData = new FormData();
   formData.append('image', imageFile);
   
-  return api.post('/upload/single', formData, {
+  return api.post('/upload/image', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
@@ -17,7 +17,7 @@ const uploadMultipleImages = (imageFiles) => {
     formData.append('images', file);
   });
   
-  return api.post('/upload/multiple', formData, {
+  return api.post('/upload/images', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
@@ -25,7 +25,7 @@ const uploadMultipleImages = (imageFiles) => {
 };
 
 const deleteImage = (publicId) => {
-  return api.delete(`/upload/${publicId}`);
+  return api.delete(`/upload/image/${publicId}`);
 };
 
 export default {

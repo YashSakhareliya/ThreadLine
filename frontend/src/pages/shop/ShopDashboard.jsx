@@ -18,12 +18,14 @@ import {
   Mail,
   Calendar,
   Loader,
-  AlertCircle
+  AlertCircle,
+  Upload
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import shopService from '../../services/shopService';
 import fabricService from '../../services/fabricService';
 import orderService from '../../services/orderService';
+import uploadService from '../../services/uploadService';
 
 const ShopDashboard = () => {
   const { user } = useAuth();
@@ -46,7 +48,8 @@ const ShopDashboard = () => {
     material: '',
     width: '',
     description: '',
-    image: ''
+    image: '',
+    images: []
   });
 
   const [shopDetails, setShopDetails] = useState({
@@ -67,6 +70,10 @@ const ShopDashboard = () => {
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [fabricsLoading, setFabricsLoading] = useState(false);
+  const [uploadingShopImage, setUploadingShopImage] = useState(false);
+  const [uploadingFabricImage, setUploadingFabricImage] = useState(false);
+  const [uploadingFabricImages, setUploadingFabricImages] = useState(false);
+  const [selectedFabricImages, setSelectedFabricImages] = useState([]);
 
   const stats = [
     { label: 'Total Products', value: shopFabrics.length, icon: Package, color: 'text-blue-600' },
@@ -89,10 +96,10 @@ const ShopDashboard = () => {
       
       await fabricService.createFabric(shop._id, fabricData);
       await fetchShopFabrics(shop._id);
-      
       setNewFabric({
-        name: '', price: '', stock: '', category: '', color: '', material: '', width: '', description: '', image: ''
+        name: '', price: '', stock: '', category: '', color: '', material: '', width: '', description: '', image: '', images: []
       });
+      setSelectedFabricImages([]);
       setShowAddFabric(false);
       setError(null);
     } catch (err) {
@@ -114,8 +121,10 @@ const ShopDashboard = () => {
       material: fabric.material,
       width: fabric.width,
       description: fabric.description,
-      image: fabric.image
+      image: fabric.image,
+      images: fabric.images || []
     });
+    setSelectedFabricImages(fabric.images || []);
   };
 
   const handleUpdateFabric = async () => {
@@ -280,6 +289,113 @@ const ShopDashboard = () => {
       console.error('Error updating order status:', err);
       setError('Failed to update order status. Please try again.');
     }
+  };
+
+  // Handle shop image upload
+  const handleShopImageUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setError('Please select a valid image file.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image size should be less than 5MB.');
+      return;
+    }
+
+    try {
+      setUploadingShopImage(true);
+      setError(null);
+      
+      const response = await uploadService.uploadSingleImage(file);
+      const imageUrl = response.data.data.url;
+      
+      setShopDetails({...shopDetails, image: imageUrl});
+    } catch (err) {
+      console.error('Error uploading shop image:', err);
+      setError('Failed to upload image. Please try again.');
+    } finally {
+      setUploadingShopImage(false);
+      event.target.value = '';
+    }
+  };
+
+  // Handle fabric main image upload
+  const handleFabricImageUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setError('Please select a valid image file.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image size should be less than 5MB.');
+      return;
+    }
+
+    try {
+      setUploadingFabricImage(true);
+      setError(null);
+      
+      const response = await uploadService.uploadSingleImage(file);
+      const imageUrl = response.data.data.url;
+      
+      setNewFabric({...newFabric, image: imageUrl});
+    } catch (err) {
+      console.error('Error uploading fabric image:', err);
+      setError('Failed to upload image. Please try again.');
+    } finally {
+      setUploadingFabricImage(false);
+      event.target.value = '';
+    }
+  };
+
+  // Handle multiple fabric images upload
+  const handleFabricImagesUpload = async (event) => {
+    const files = Array.from(event.target.files);
+    if (files.length === 0) return;
+
+    // Validate files
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) {
+        setError('Please select only image files.');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Each image should be less than 5MB.');
+        return;
+      }
+    }
+
+    try {
+      setUploadingFabricImages(true);
+      setError(null);
+      
+      const response = await uploadService.uploadMultipleImages(files);
+      const imageUrls = response.data.data.map(img => img.url);
+      
+      const updatedImages = [...selectedFabricImages, ...imageUrls];
+      setSelectedFabricImages(updatedImages);
+      setNewFabric({...newFabric, images: updatedImages});
+    } catch (err) {
+      console.error('Error uploading fabric images:', err);
+      setError('Failed to upload images. Please try again.');
+    } finally {
+      setUploadingFabricImages(false);
+      event.target.value = '';
+    }
+  };
+
+  // Remove fabric image
+  const handleRemoveFabricImage = (index) => {
+    const updatedImages = selectedFabricImages.filter((_, i) => i !== index);
+    setSelectedFabricImages(updatedImages);
+    setNewFabric({...newFabric, images: updatedImages});
   };
 
   if (loading) {
@@ -622,13 +738,38 @@ const ShopDashboard = () => {
                         <label className="block text-sm font-semibold text-slate-700 mb-2">
                           Shop Image URL
                         </label>
-                        <input
-                          type="url"
-                          value={shopDetails.image}
-                          onChange={(e) => setShopDetails({...shopDetails, image: e.target.value})}
-                          className="input-field"
-                          placeholder="https://example.com/shop-image.jpg"
-                        />
+                        <div className="space-y-2">
+                          <div className="flex space-x-2">
+                            <input
+                              type="url"
+                              value={shopDetails.image}
+                              onChange={(e) => setShopDetails({...shopDetails, image: e.target.value})}
+                              className="input-field flex-1"
+                              placeholder="https://example.com/shop-image.jpg"
+                            />
+                            <div className="relative">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleShopImageUpload}
+                                className="hidden"
+                                id="shop-image-upload"
+                              />
+                              <label
+                                htmlFor="shop-image-upload"
+                                className="flex items-center space-x-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors duration-300 cursor-pointer"
+                              >
+                                {uploadingShopImage ? (
+                                  <Loader className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Upload className="w-4 h-4" />
+                                )}
+                                <span>{uploadingShopImage ? 'Uploading...' : 'Upload'}</span>
+                              </label>
+                            </div>
+                          </div>
+                          <p className="text-xs text-slate-500">Upload from device or paste URL</p>
+                        </div>
                       </div>
 
                       <div>
@@ -861,13 +1002,39 @@ const ShopDashboard = () => {
                       onChange={(e) => setNewFabric({...newFabric, width: e.target.value})}
                       className="input-field"
                     />
-                    <input
-                      type="url"
-                      placeholder="Image URL"
-                      value={newFabric.image}
-                      onChange={(e) => setNewFabric({...newFabric, image: e.target.value})}
-                      className="input-field"
-                    />
+                    <div className="space-y-2">
+                      <label className="block text-sm font-semibold text-slate-700">Main Image</label>
+                      <div className="flex space-x-2">
+                        <input
+                          type="url"
+                          placeholder="Image URL"
+                          value={newFabric.image}
+                          onChange={(e) => setNewFabric({...newFabric, image: e.target.value})}
+                          className="input-field flex-1"
+                        />
+                        <div className="relative">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFabricImageUpload}
+                            className="hidden"
+                            id="fabric-image-upload"
+                          />
+                          <label
+                            htmlFor="fabric-image-upload"
+                            className="flex items-center space-x-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors duration-300 cursor-pointer"
+                          >
+                            {uploadingFabricImage ? (
+                              <Loader className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Upload className="w-4 h-4" />
+                            )}
+                            <span>{uploadingFabricImage ? 'Uploading...' : 'Upload'}</span>
+                          </label>
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-500">Upload from device or paste URL</p>
+                    </div>
                     <textarea
                       placeholder="Description"
                       value={newFabric.description}
@@ -875,6 +1042,55 @@ const ShopDashboard = () => {
                       rows={3}
                       className="input-field md:col-span-2 resize-none"
                     />
+                    
+                    {/* Additional Images Section */}
+                    <div className="md:col-span-2 space-y-3">
+                      <label className="block text-sm font-semibold text-slate-700">Additional Images (Optional)</label>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleFabricImagesUpload}
+                          className="hidden"
+                          id="fabric-images-upload"
+                        />
+                        <label
+                          htmlFor="fabric-images-upload"
+                          className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-shop-primary to-shop-secondary text-white rounded-lg hover:shadow-lg transition-all duration-300 cursor-pointer"
+                        >
+                          {uploadingFabricImages ? (
+                            <Loader className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Plus className="w-4 h-4" />
+                          )}
+                          <span>{uploadingFabricImages ? 'Uploading...' : 'Add Images'}</span>
+                        </label>
+                        <span className="text-sm text-slate-500">Max 5MB each</span>
+                      </div>
+                      
+                      {/* Display selected images */}
+                      {selectedFabricImages.length > 0 && (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {selectedFabricImages.map((image, index) => (
+                            <div key={index} className="relative group">
+                              <img
+                                src={image}
+                                alt={`Additional ${index + 1}`}
+                                className="w-full h-20 object-cover rounded-lg"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveFabricImage(index)}
+                                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-red-600"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="flex space-x-4 mt-4">

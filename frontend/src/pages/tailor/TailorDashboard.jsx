@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import tailorService from '../../services/tailorService';
+import uploadService from '../../services/uploadService';
 
 const TailorDashboard = () => {
   const { user } = useAuth();
@@ -160,32 +161,6 @@ const TailorDashboard = () => {
   };
 
   // Handle image upload to Cloudinary
-  const uploadImageToCloudinary = async (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', 'threadline_portfolio'); // You'll need to set this up in Cloudinary
-    
-    try {
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/your-cloud-name/image/upload`, // Replace with your cloud name
-        {
-          method: 'POST',
-          body: formData,
-        }
-      );
-      
-      if (!response.ok) {
-        throw new Error('Upload failed');
-      }
-      
-      const data = await response.json();
-      return data.secure_url;
-    } catch (error) {
-      console.error('Error uploading to Cloudinary:', error);
-      throw error;
-    }
-  };
-
   const handleAddPortfolioImage = () => {
     fileInputRef.current?.click();
   };
@@ -210,11 +185,9 @@ const TailorDashboard = () => {
       setUploadingImage(true);
       setError(null);
 
-      // For now, create a local URL preview (replace with Cloudinary upload)
-      const imageUrl = URL.createObjectURL(file);
-      
-      // In production, uncomment this and configure Cloudinary:
-      // const imageUrl = await uploadImageToCloudinary(file);
+      // Upload image to backend/Cloudinary
+      const response = await uploadService.uploadSingleImage(file);
+      const imageUrl = response.data.data.url;
       
       const updatedPortfolio = [...portfolio, imageUrl];
       setPortfolio(updatedPortfolio);
