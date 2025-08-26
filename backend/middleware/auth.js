@@ -85,8 +85,8 @@ export const checkOwnership = (Model) => {
         });
       }
 
-      // For shops and tailors, check if the user owns the resource
-      if (resource.user && resource.user.toString() !== req.user._id.toString()) {
+      // For shops and tailors, check if the user owns the resource (using 'owner' field)
+      if (resource.owner && resource.owner.toString() !== req.user._id.toString()) {
         return res.status(403).json({
           success: false,
           message: 'Not authorized to access this resource'
@@ -97,12 +97,20 @@ export const checkOwnership = (Model) => {
       if (resource.shop) {
         const Shop = (await import('../models/Shop.js')).default;
         const shop = await Shop.findById(resource.shop);
-        if (shop && shop.user.toString() !== req.user._id.toString()) {
+        if (shop && shop.owner.toString() !== req.user._id.toString()) {
           return res.status(403).json({
             success: false,
             message: 'Not authorized to access this fabric'
           });
         }
+      }
+
+      // Additional check for resources that might use 'user' field instead of 'owner'
+      if (resource.user && resource.user.toString() !== req.user._id.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'Not authorized to access this resource'
+        });
       }
 
       req.resource = resource;
