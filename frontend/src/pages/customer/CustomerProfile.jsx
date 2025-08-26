@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   User, 
@@ -14,72 +14,164 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { cities } from '../../data/mockData';
 import OrderCard from '../../components/cards/OrderCard';
-import { orders } from '../../data/mockData';
+import customerService from '../../services/customerService';
+import orderService from '../../services/orderService';
 
 const CustomerProfile = () => {
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+  const [error, setError] = useState(null);
+  const [customerProfile, setCustomerProfile] = useState(null);
+  const [userOrders, setUserOrders] = useState([]);
   
   const [profileData, setProfileData] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    city: user?.city || ''
+    name: '',
+    email: '',
+    phone: '',
+    city: ''
   });
 
-  const [addresses, setAddresses] = useState([
-    {
-      id: 1,
-      name: 'Home',
-      address: '123 Main Street, Apartment 4B',
-      city: 'Mumbai',
-      pincode: '400001',
-      phone: '+91 98765 43210',
-      isDefault: true
-    },
-    {
-      id: 2,
-      name: 'Office',
-      address: '456 Business Park, Floor 3',
-      city: 'Mumbai',
-      pincode: '400002',
-      phone: '+91 98765 43211',
-      isDefault: false
-    }
-  ]);
+  const [addresses, setAddresses] = useState([]);
 
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [newAddress, setNewAddress] = useState({
     name: '',
     address: '',
     city: '',
-    pincode: '',
+    zipCode: '',
     phone: ''
   });
 
-  const userOrders = orders.filter(order => order.customerId === user?.id);
+  // Fetch customer profile and orders
+  useEffect(() => {
+    const fetchCustomerData = async () => {
+      if (!user?._id) return;
+      
+      try {
+        setLoading(true);
+        const [profileResponse, ordersResponse] = await Promise.all([
+          customerService.getCustomerProfile(),
+          orderService.getMyOrders()
+        ]);
 
-  const handleProfileSave = () => {
-    // Save profile data
-    console.log('Saving profile:', profileData);
-    setIsEditing(false);
-  };
+        if (profileResponse.success) {
+          const profile = profileResponse.data;
+          setCustomerProfile(profile);
+          setProfileData({
+            name: profile.name || '',
+            email: profile.email || '',
+            phone: profile.phone || '',
+            city: profile.city || ''
+          });
+          setAddresses(profile.addresses || []);
+        }
 
-  const handleAddAddress = () => {
-    const address = {
-      id: Date.now(),
-      ...newAddress,
-      isDefault: addresses.length === 0
+        if (ordersResponse.success) {
+          setUserOrders(ordersResponse.data || []);
+        }
+
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching customer data:', err);
+        setError('Failed to load profile data');
+      } finally {
+        setLoading(false);
+      }
     };
-    setAddresses([...addresses, address]);
-    setNewAddress({ name: '', address: '', city: '', pincode: '', phone: '' });
-    setShowAddressForm(false);
+
+    fetchCustomerData();
+  }, [user]);
+
+  const handleProfileSave = async () => {
+    try {
+      setUpdating(true);
+      const response = await customerService.updateCustomerProfile(profileData);
+      
+      if (response.success) {
+        setCustomerProfile(response.data);
+        setIsEditing(false);
+        setError(null);
+      }
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      setError('Failed to update profile');
+    } finally {
+      setUpdating(false);
+    }
   };
 
-  const handleDeleteAddress = (id) => {
-    setAddresses(addresses.filter(addr => addr.id !== id));
+  const handleAddAddress = async () => {
+    try {
+      setUpdating(true);
+      const addressData = {
+        ...newAddress,
+        isDefault: addresses.length === 0
+      };
+      
+      const response = await customerService.addAddress(addressData);
+      
+      if (response.success) {
+        setCustomerProfile(response.data);
+        setAddresses(response.data.addresses || []);
+        setNewAddress({ name: '', address: '', city: '', zipCode: '', phone: '' });
+        setShowAddressForm(false);
+        setError(null);
+      }
+    } catch (err) {
+      console.error('Error adding address:', err);
+      setError('Failed to add address');
+    } finally {
+      setUpdating(false);
+    }
   };
+
+  const handleDeleteAddress = async (addressId) => {
+    try {
+      setUpdating(true);
+      const response = await customerService.deleteAddress(addressId);
+      
+      if (response.success) {
+        setCustomerProfile(response.data);
+        setAddresses(response.data.addresses || []);
+        setError(null);
+      }
+    } catch (err) {
+      console.error('Error deleting address:', err);
+      setError('Failed to delete address');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen pt-20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-customer-primary mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen pt-20 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="btn-primary"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const tabs = [
     { id: 'profile', name: 'Profile Details', icon: User },
@@ -99,8 +191,8 @@ const CustomerProfile = () => {
           <div className="w-24 h-24 bg-gradient-to-r from-customer-primary to-customer-secondary rounded-full flex items-center justify-center mx-auto mb-4">
             <User className="w-12 h-12 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-slate-800">{user?.name}</h1>
-          <p className="text-slate-600">{user?.email}</p>
+          <h1 className="text-3xl font-bold text-slate-800">{customerProfile?.name}</h1>
+          <p className="text-slate-600">{customerProfile?.email}</p>
         </motion.div>
 
         {/* Tabs */}
@@ -141,10 +233,19 @@ const CustomerProfile = () => {
                 <h2 className="text-2xl font-bold text-slate-800">Profile Details</h2>
                 <button
                   onClick={() => isEditing ? handleProfileSave() : setIsEditing(true)}
-                  className="flex items-center space-x-2 btn-primary"
+                  disabled={updating}
+                  className="flex items-center space-x-2 btn-primary disabled:opacity-50"
                 >
-                  {isEditing ? <Save className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
-                  <span>{isEditing ? 'Save Changes' : 'Edit Profile'}</span>
+                  {updating ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  ) : isEditing ? (
+                    <Save className="w-4 h-4" />
+                  ) : (
+                    <Edit className="w-4 h-4" />
+                  )}
+                  <span>
+                    {updating ? 'Saving...' : isEditing ? 'Save Changes' : 'Edit Profile'}
+                  </span>
                 </button>
               </div>
 
@@ -159,7 +260,7 @@ const CustomerProfile = () => {
                       type="text"
                       value={profileData.name}
                       onChange={(e) => setProfileData({...profileData, name: e.target.value})}
-                      disabled={!isEditing}
+                      disabled={!isEditing || updating}
                       className="input-field pl-10 disabled:bg-slate-50 disabled:cursor-not-allowed"
                     />
                   </div>
@@ -175,7 +276,7 @@ const CustomerProfile = () => {
                       type="email"
                       value={profileData.email}
                       onChange={(e) => setProfileData({...profileData, email: e.target.value})}
-                      disabled={!isEditing}
+                      disabled={!isEditing || updating}
                       className="input-field pl-10 disabled:bg-slate-50 disabled:cursor-not-allowed"
                     />
                   </div>
@@ -191,7 +292,7 @@ const CustomerProfile = () => {
                       type="tel"
                       value={profileData.phone}
                       onChange={(e) => setProfileData({...profileData, phone: e.target.value})}
-                      disabled={!isEditing}
+                      disabled={!isEditing || updating}
                       className="input-field pl-10 disabled:bg-slate-50 disabled:cursor-not-allowed"
                     />
                   </div>
@@ -206,7 +307,7 @@ const CustomerProfile = () => {
                     <select
                       value={profileData.city}
                       onChange={(e) => setProfileData({...profileData, city: e.target.value})}
-                      disabled={!isEditing}
+                      disabled={!isEditing || updating}
                       className="input-field pl-10 appearance-none disabled:bg-slate-50 disabled:cursor-not-allowed"
                     >
                       {cities.map((city) => (
@@ -225,7 +326,8 @@ const CustomerProfile = () => {
                 <h2 className="text-2xl font-bold text-slate-800">Saved Addresses</h2>
                 <button
                   onClick={() => setShowAddressForm(!showAddressForm)}
-                  className="flex items-center space-x-2 btn-primary"
+                  disabled={updating}
+                  className="flex items-center space-x-2 btn-primary disabled:opacity-50"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Add Address</span>
@@ -246,44 +348,54 @@ const CustomerProfile = () => {
                       placeholder="Address Name (Home, Office, etc.)"
                       value={newAddress.name}
                       onChange={(e) => setNewAddress({...newAddress, name: e.target.value})}
-                      className="input-field"
+                      disabled={updating}
+                      className="input-field disabled:bg-slate-50 disabled:cursor-not-allowed"
                     />
                     <input
                       type="text"
                       placeholder="Phone Number"
                       value={newAddress.phone}
                       onChange={(e) => setNewAddress({...newAddress, phone: e.target.value})}
-                      className="input-field"
+                      disabled={updating}
+                      className="input-field disabled:bg-slate-50 disabled:cursor-not-allowed"
                     />
                     <input
                       type="text"
                       placeholder="Full Address"
                       value={newAddress.address}
                       onChange={(e) => setNewAddress({...newAddress, address: e.target.value})}
-                      className="input-field md:col-span-2"
+                      disabled={updating}
+                      className="input-field md:col-span-2 disabled:bg-slate-50 disabled:cursor-not-allowed"
                     />
                     <input
                       type="text"
                       placeholder="City"
                       value={newAddress.city}
                       onChange={(e) => setNewAddress({...newAddress, city: e.target.value})}
-                      className="input-field"
+                      disabled={updating}
+                      className="input-field disabled:bg-slate-50 disabled:cursor-not-allowed"
                     />
                     <input
                       type="text"
-                      placeholder="Pincode"
-                      value={newAddress.pincode}
-                      onChange={(e) => setNewAddress({...newAddress, pincode: e.target.value})}
-                      className="input-field"
+                      placeholder="Zip Code"
+                      value={newAddress.zipCode}
+                      onChange={(e) => setNewAddress({...newAddress, zipCode: e.target.value})}
+                      disabled={updating}
+                      className="input-field disabled:bg-slate-50 disabled:cursor-not-allowed"
                     />
                   </div>
                   <div className="flex space-x-4 mt-4">
-                    <button onClick={handleAddAddress} className="btn-primary">
-                      Save Address
+                    <button 
+                      onClick={handleAddAddress} 
+                      disabled={updating}
+                      className="btn-primary disabled:opacity-50"
+                    >
+                      {updating ? 'Saving...' : 'Save Address'}
                     </button>
                     <button 
                       onClick={() => setShowAddressForm(false)}
-                      className="btn-secondary"
+                      disabled={updating}
+                      className="btn-secondary disabled:opacity-50"
                     >
                       Cancel
                     </button>
@@ -295,7 +407,7 @@ const CustomerProfile = () => {
               <div className="space-y-4">
                 {addresses.map((address) => (
                   <motion.div
-                    key={address.id}
+                    key={address._id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="card"
@@ -311,7 +423,7 @@ const CustomerProfile = () => {
                           )}
                         </div>
                         <p className="text-slate-600 mb-1">{address.address}</p>
-                        <p className="text-slate-600 mb-1">{address.city} - {address.pincode}</p>
+                        <p className="text-slate-600 mb-1">{address.city} - {address.zipCode}</p>
                         <p className="text-slate-600">{address.phone}</p>
                       </div>
                       <div className="flex space-x-2">
@@ -319,8 +431,9 @@ const CustomerProfile = () => {
                           <Edit className="w-4 h-4" />
                         </button>
                         <button 
-                          onClick={() => handleDeleteAddress(address.id)}
-                          className="p-2 text-slate-400 hover:text-red-500 transition-colors duration-300"
+                          onClick={() => handleDeleteAddress(address._id)}
+                          disabled={updating}
+                          className="p-2 text-slate-400 hover:text-red-500 transition-colors duration-300 disabled:opacity-50"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
