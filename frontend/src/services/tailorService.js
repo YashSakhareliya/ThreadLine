@@ -25,11 +25,26 @@ const addTailorReview = (tailorId, reviewData) => {
   return api.post(`/tailors/${tailorId}/reviews`, reviewData);
 };
 
+const sendInquiry = (tailorId, inquiryData) => {
+  return api.post(`/tailors/${tailorId}/inquiries`, inquiryData);
+};
+
+const getTailorInquiries = (tailorId) => {
+  return api.get(`/tailors/${tailorId}/inquiries`);
+};
+
+const replyToInquiry = (tailorId, inquiryId, replyData) => {
+  return api.post(`/tailors/${tailorId}/inquiries/${inquiryId}/reply`, replyData);
+};
+
 export default {
   getAllTailors,
   getTailorById,
   createTailor,
   updateTailor,
   deleteTailor,
-  addTailorReview
+  addTailorReview,
+  sendInquiry,
+  getTailorInquiries,
+  replyToInquiry
 };

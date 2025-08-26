@@ -52,11 +52,11 @@ const TailorDashboard = () => {
     'Blouses', 'Casual Wear', 'Formal Wear', 'Alterations'
   ];
 
-  // Fetch tailor profile data
+  // Fetch tailor profile data and inquiries
   useEffect(() => {
     console.log("in use Effect")
     console.log(user)
-    const fetchTailorProfile = async () => {
+    const fetchTailorData = async () => {
       try {
         setLoading(true);
         setError(null);
@@ -80,6 +80,29 @@ const TailorDashboard = () => {
           });
           console.log(userTailor)
           setPortfolio(userTailor.portfolio || []);
+          
+          // Fetch inquiries for this tailor
+          try {
+            const inquiriesResponse = await tailorService.getTailorInquiries(userTailor._id);
+            setInquiries(inquiriesResponse.data.data || []);
+          } catch (inquiryErr) {
+            console.error('Error fetching inquiries:', inquiryErr);
+            // Don't set error for inquiries, just log it
+          }
+          
+          // Refresh tailor profile to get latest reviews
+          try {
+            const refreshedTailorResponse = await tailorService.getTailorById(userTailor._id);
+            const refreshedTailor = refreshedTailorResponse.data.data;
+            setTailorProfile(prev => ({
+              ...prev,
+              reviews: refreshedTailor.reviews,
+              rating: refreshedTailor.rating,
+              totalReviews: refreshedTailor.totalReviews
+            }));
+          } catch (reviewErr) {
+            console.error('Error refreshing tailor reviews:', reviewErr);
+          }
         } else {
           setError('No tailor profile found. Please create your tailor profile first.');
         }
@@ -92,54 +115,12 @@ const TailorDashboard = () => {
     };
 
     if (user?._id) {
-      fetchTailorProfile();
+      fetchTailorData();
     }
   }, [user]);
 
-  // Mock data for inquiries (to be replaced with real API later)
-  const [inquiries] = useState([
-    {
-      id: 1,
-      customerName: 'Priya Sharma',
-      customerEmail: 'priya@email.com',
-      message: 'Hi, I need a custom saree blouse. Can you help?',
-      date: '2024-01-20',
-      status: 'new',
-      messages: [
-        {
-          id: 1,
-          sender: 'Priya Sharma',
-          message: 'Hi, I need a custom saree blouse. Can you help?',
-          timestamp: '2024-01-20 10:30 AM',
-          isCustomer: true
-        }
-      ]
-    },
-    {
-      id: 2,
-      customerName: 'Amit Kumar',
-      customerEmail: 'amit@email.com',
-      message: 'Looking for a wedding suit. What are your rates?',
-      date: '2024-01-19',
-      status: 'replied',
-      messages: [
-        {
-          id: 1,
-          sender: 'Amit Kumar',
-          message: 'Looking for a wedding suit. What are your rates?',
-          timestamp: '2024-01-19 2:15 PM',
-          isCustomer: true
-        },
-        {
-          id: 2,
-          sender: user?.name || 'Tailor',
-          message: 'Hello! For wedding suits, my rates start from ₹1500. Would you like to discuss the details?',
-          timestamp: '2024-01-19 3:45 PM',
-          isCustomer: false
-        }
-      ]
-    }
-  ]);
+  // Real inquiries data from backend
+  const [inquiries, setInquiries] = useState([]);
 
   const handleProfileSave = async () => {
     if (!tailorProfile?._id) return;
@@ -225,25 +206,34 @@ const TailorDashboard = () => {
     }
   };
 
-  const handleSendReply = () => {
-    if (replyMessage.trim() && selectedInquiry) {
-      const newMessage = {
-        id: Date.now(),
-        sender: user?.name || 'Tailor',
-        message: replyMessage,
-        timestamp: new Date().toLocaleString(),
-        isCustomer: false
-      };
+  const [sendingReply, setSendingReply] = useState(false);
+
+  const handleSendReply = async () => {
+    if (!replyMessage.trim() || !selectedInquiry || !tailorProfile?._id) return;
+    
+    try {
+      setSendingReply(true);
+      setError(null);
       
-      // Update the inquiry with new message
-      const updatedInquiry = {
-        ...selectedInquiry,
-        messages: [...selectedInquiry.messages, newMessage],
-        status: 'replied'
-      };
+      await tailorService.replyToInquiry(tailorProfile._id, selectedInquiry._id, {
+        message: replyMessage
+      });
       
-      setSelectedInquiry(updatedInquiry);
+      // Refresh inquiries to get updated data
+      const inquiriesResponse = await tailorService.getTailorInquiries(tailorProfile._id);
+      const updatedInquiries = inquiriesResponse.data.data || [];
+      setInquiries(updatedInquiries);
+      
+      // Update selected inquiry
+      const updatedSelectedInquiry = updatedInquiries.find(inq => inq._id === selectedInquiry._id);
+      setSelectedInquiry(updatedSelectedInquiry || null);
+      
       setReplyMessage('');
+    } catch (err) {
+      console.error('Error sending reply:', err);
+      setError(err.response?.data?.message || 'Failed to send reply. Please try again.');
+    } finally {
+      setSendingReply(false);
     }
   };
 
@@ -391,7 +381,7 @@ const TailorDashboard = () => {
                   <h3 className="text-xl font-bold text-slate-800 mb-4">Recent Inquiries</h3>
                   <div className="space-y-3">
                     {inquiries.slice(0, 3).map((inquiry) => (
-                      <div key={inquiry.id} className="p-3 bg-slate-50 rounded-lg">
+                      <div key={inquiry._id} className="p-3 bg-slate-50 rounded-lg">
                         <div className="flex justify-between items-start mb-2">
                           <h4 className="font-semibold text-slate-800">{inquiry.customerName}</h4>
                           <span className={`px-2 py-1 text-xs rounded-full ${
@@ -402,8 +392,8 @@ const TailorDashboard = () => {
                             {inquiry.status}
                           </span>
                         </div>
-                        <p className="text-sm text-slate-600 mb-2">{inquiry.message}</p>
-                        <p className="text-xs text-slate-500">{inquiry.date}</p>
+                        <p className="text-sm text-slate-600 mb-2">{inquiry.subject}</p>
+                        <p className="text-xs text-slate-500">{new Date(inquiry.createdAt).toLocaleDateString()}</p>
                       </div>
                     ))}
                   </div>
@@ -650,11 +640,11 @@ const TailorDashboard = () => {
                   <div className="space-y-3">
                     {inquiries.map((inquiry) => (
                       <motion.div
-                        key={inquiry.id}
+                        key={inquiry._id}
                         whileHover={{ scale: 1.02 }}
                         onClick={() => setSelectedInquiry(inquiry)}
                         className={`p-3 border rounded-lg cursor-pointer transition-all duration-300 ${
-                          selectedInquiry?.id === inquiry.id
+                          selectedInquiry?._id === inquiry._id
                             ? 'border-tailor-primary bg-tailor-light'
                             : 'border-slate-200 hover:border-slate-300'
                         }`}
@@ -669,8 +659,8 @@ const TailorDashboard = () => {
                             {inquiry.status}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-600 line-clamp-2">{inquiry.message}</p>
-                        <p className="text-xs text-slate-500 mt-1">{inquiry.date}</p>
+                        <p className="text-xs text-slate-600 line-clamp-2">{inquiry.subject}</p>
+                        <p className="text-xs text-slate-500 mt-1">{new Date(inquiry.createdAt).toLocaleDateString()}</p>
                       </motion.div>
                     ))}
                   </div>
@@ -689,7 +679,7 @@ const TailorDashboard = () => {
                     <div className="flex-1 overflow-y-auto space-y-3 mb-4">
                       {selectedInquiry.messages.map((msg) => (
                         <div
-                          key={msg.id}
+                          key={msg._id}
                           className={`flex ${msg.isCustomer ? 'justify-start' : 'justify-end'}`}
                         >
                           <div
@@ -700,7 +690,7 @@ const TailorDashboard = () => {
                             }`}
                           >
                             <p className="text-sm">{msg.message}</p>
-                            <p className="text-xs opacity-70 mt-1">{msg.timestamp}</p>
+                            <p className="text-xs opacity-70 mt-1">{new Date(msg.timestamp).toLocaleString()}</p>
                           </div>
                         </div>
                       ))}
@@ -718,9 +708,11 @@ const TailorDashboard = () => {
                         />
                         <button
                           onClick={handleSendReply}
-                          className="px-4 py-2 bg-tailor-primary text-white rounded-lg hover:bg-tailor-secondary transition-colors duration-300"
+                          disabled={sendingReply || !replyMessage.trim()}
+                          className="px-4 py-2 bg-tailor-primary text-white rounded-lg hover:bg-tailor-secondary transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                         >
-                          Send
+                          {sendingReply && <Loader className="w-4 h-4 animate-spin" />}
+                          <span>{sendingReply ? 'Sending...' : 'Send'}</span>
                         </button>
                       </div>
                     </div>
