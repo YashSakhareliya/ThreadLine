@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import Tailor from '../models/Tailor.js';
 import Shop from '../models/Shop.js';
+import Customer from '../models/Customer.js';
 import generateToken from '../utils/generateToken.js';
 import { validationResult } from 'express-validator';
 import { sendWelcomeEmail } from '../utils/emailService.js';
@@ -84,6 +85,23 @@ export const register = async (req, res) => {
         } catch (shopError) {
           console.error('Error creating shop profile:', shopError);
           // Don't fail registration if shop profile creation fails
+        }
+      }
+
+      // Create customer profile if user role is customer
+      if (user.role === 'customer') {
+        try {
+          const customerProfile = await Customer.create({
+            owner: user._id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone || '+1234567890',
+            city: user.address?.city || 'Not specified'
+          });
+          additionalData.customerProfile = customerProfile;
+        } catch (customerError) {
+          console.error('Error creating customer profile:', customerError);
+          // Don't fail registration if customer profile creation fails
         }
       }
 
