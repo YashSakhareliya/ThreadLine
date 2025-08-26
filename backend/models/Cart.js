@@ -38,6 +38,10 @@ const cartSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  customerProfile: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Customer'
+  },
   items: [cartItemSchema],
   totalItems: {
     type: Number,

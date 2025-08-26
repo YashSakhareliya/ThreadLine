@@ -82,10 +82,9 @@ const orderSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  customerId: {
+  customerProfile: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+    ref: 'Customer'
   },
   items: [orderItemSchema],
   total: {
