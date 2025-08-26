@@ -8,6 +8,11 @@ import {
   deleteTailor,
   addTailorReview
 } from '../controllers/tailorController.js';
+import {
+  sendInquiry,
+  getTailorInquiries,
+  replyToInquiry
+} from '../controllers/inquiryController.js';
 import { protect, authorize, optionalAuth, checkOwnership } from '../middleware/auth.js';
 import Tailor from '../models/Tailor.js';
 
@@ -31,6 +36,15 @@ const reviewValidation = [
   body('comment').trim().isLength({ min: 5, max: 500 }).withMessage('Comment must be between 5 and 500 characters')
 ];
 
+const inquiryValidation = [
+  body('subject').trim().isLength({ min: 5, max: 200 }).withMessage('Subject must be between 5 and 200 characters'),
+  body('message').trim().isLength({ min: 10, max: 1000 }).withMessage('Message must be between 10 and 1000 characters')
+];
+
+const replyValidation = [
+  body('message').trim().isLength({ min: 1, max: 1000 }).withMessage('Message must be between 1 and 1000 characters')
+];
+
 // Routes
 router.route('/')
   .get(optionalAuth, getAllTailors)
@@ -43,5 +57,12 @@ router.route('/:id')
 
 router.route('/:id/reviews')
   .post(protect, authorize('customer'), reviewValidation, addTailorReview);
+
+router.route('/:id/inquiries')
+  .post(protect, authorize('customer'), inquiryValidation, sendInquiry)
+  .get(protect, authorize('tailor'), getTailorInquiries);
+
+router.route('/:id/inquiries/:inquiryId/reply')
+  .post(protect, authorize('tailor'), replyValidation, replyToInquiry);
 
 export default router;
