@@ -64,7 +64,10 @@ const TailorDashboard = () => {
         // First, get all tailors and find the one owned by current user
         const response = await tailorService.getAllTailors();
         const tailors = response.data.data;
-        const userTailor = tailors.find(tailor => tailor.owner === user?._id || tailor.owner?._id === user?.id);
+        const userTailor = tailors.find(tailor => {
+          const ownerId = tailor.owner?._id || tailor.owner;
+          return ownerId === user._id;
+        });
         if (userTailor) {
           setTailorProfile(userTailor);
           setProfileData({
@@ -75,6 +78,7 @@ const TailorDashboard = () => {
             phone: userTailor.phone || '',
             email: userTailor.email || ''
           });
+          console.log(userTailor)
           setPortfolio(userTailor.portfolio || []);
         } else {
           setError('No tailor profile found. Please create your tailor profile first.');
