@@ -313,3 +313,105 @@ export const cancelOrder = async (req, res) => {
     });
   }
 };
+
+// @desc    Get shop orders
+// @route   GET /api/v1/shops/:shopId/orders
+// @access  Private (Shop owner only)
+export const getShopOrders = async (req, res) => {
+  try {
+    const { status, page = 1, limit = 10, sortBy = 'createdAt' } = req.query;
+    const shopId = req.params.id; // Use 'id' instead of 'shopId' to match route parameter
+
+    // Convert shopId to ObjectId for proper MongoDB comparison
+    const mongoose = await import('mongoose');
+    const shopObjectId = new mongoose.default.Types.ObjectId(shopId);
+
+    // Aggregate to get orders that contain fabrics from this shop
+    const orders = await Order.aggregate([
+      // First, lookup fabric details for each item
+      {
+        $lookup: {
+          from: 'fabrics',
+          localField: 'items.fabric',
+          foreignField: '_id',
+          as: 'fabricDetails'
+        }
+      },
+      // Filter orders that have fabrics from this shop
+      {
+        $match: {
+          'fabricDetails.shop': shopObjectId
+        }
+      },
+      // Add status filter if provided
+      ...(status ? [{ $match: { status } }] : []),
+      // Sort
+      { $sort: { [sortBy]: -1 } },
+      // Pagination
+      { $skip: (page - 1) * parseInt(limit) },
+      { $limit: parseInt(limit) },
+      // Lookup customer details
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'customer',
+          foreignField: '_id',
+          as: 'customerDetails'
+        }
+      },
+      // Project only needed fields
+      {
+        $project: {
+          _id: 1,
+          customer: { $arrayElemAt: ['$customerDetails.name', 0] },
+          customerEmail: { $arrayElemAt: ['$customerDetails.email', 0] },
+          items: 1,
+          total: 1,
+          status: 1,
+          createdAt: 1,
+          shippingAddress: 1,
+          trackingNumber: 1
+        }
+      }
+    ]);
+
+    // Get total count
+    const totalResult = await Order.aggregate([
+      {
+        $lookup: {
+          from: 'fabrics',
+          localField: 'items.fabric',
+          foreignField: '_id',
+          as: 'fabricDetails'
+        }
+      },
+      {
+        $match: {
+          'fabricDetails.shop': shopObjectId,
+          ...(status ? { status } : {})
+        }
+      },
+      { $count: 'total' }
+    ]);
+
+    const total = totalResult.length > 0 ? totalResult[0].total : 0;
+
+    res.json({
+      success: true,
+      count: orders.length,
+      total,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(total / limit)
+      },
+      data: orders
+    });
+  } catch (error) {
+    console.error('Get shop orders error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};

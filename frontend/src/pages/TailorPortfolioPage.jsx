@@ -33,6 +33,9 @@ const TailorPortfolioPage = () => {
   const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
   const [chatMessage, setChatMessage] = useState('');
   const [chatMessages, setChatMessages] = useState([]);
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [sendingInquiry, setSendingInquiry] = useState(false);
+  const [inquirySubject, setInquirySubject] = useState('');
 
   useEffect(() => {
     const fetchTailor = async () => {
@@ -51,51 +54,59 @@ const TailorPortfolioPage = () => {
     fetchTailor();
   }, [id]);
 
-  const handleSendMessage = () => {
-    if (chatMessage.trim()) {
-      const message = {
-        id: Date.now(),
-        sender: user?.name || 'Customer',
-        message: chatMessage,
-        timestamp: new Date().toLocaleTimeString(),
-        isCustomer: true
-      };
-      setChatMessages([...chatMessages, message]);
-      setChatMessage('');
+  const handleSendMessage = async () => {
+    if (!chatMessage.trim() || !inquirySubject.trim()) {
+      setError('Please provide both subject and message.');
+      return;
+    }
+    
+    try {
+      setSendingInquiry(true);
+      setError(null);
       
-      // Simulate tailor response after 2 seconds
-      setTimeout(() => {
-        const response = {
-          id: Date.now() + 1,
-          sender: tailor?.name || 'Tailor',
-          message: 'Thank you for your inquiry! I\'ll get back to you with details shortly.',
-          timestamp: new Date().toLocaleTimeString(),
-          isCustomer: false
-        };
-        setChatMessages(prev => [...prev, response]);
-      }, 2000);
+      await tailorService.sendInquiry(id, {
+        subject: inquirySubject,
+        message: chatMessage
+      });
+      
+      // Clear form and close modal
+      setChatMessage('');
+      setInquirySubject('');
+      setShowChatModal(false);
+      
+      // Show success message
+      alert('Inquiry sent successfully! The tailor will respond soon.');
+    } catch (err) {
+      console.error('Error sending inquiry:', err);
+      setError(err.response?.data?.message || 'Failed to send inquiry. Please try again.');
+    } finally {
+      setSendingInquiry(false);
     }
   };
 
-  const handleSubmitReview = () => {
-    if (newReview.comment.trim()) {
-      const review = {
-        id: Date.now(),
-        customerName: user?.name || 'Anonymous',
-        rating: newReview.rating,
-        comment: newReview.comment,
-        date: new Date().toLocaleDateString(),
-        images: []
-      };
+  const handleSubmitReview = async () => {
+    if (!newReview.comment.trim()) return;
+    
+    try {
+      setSubmittingReview(true);
+      setError(null);
       
-      // Add review to tailor's reviews
-      setTailor(prev => ({
-        ...prev,
-        reviews: [review, ...prev.reviews]
-      }));
+      await tailorService.addTailorReview(id, {
+        rating: newReview.rating,
+        comment: newReview.comment
+      });
+      
+      // Refresh tailor data to get updated reviews
+      const res = await tailorService.getTailorById(id);
+      setTailor(res.data.data);
       
       setNewReview({ rating: 5, comment: '' });
       setShowReviewModal(false);
+    } catch (err) {
+      console.error('Error submitting review:', err);
+      setError(err.response?.data?.message || 'Failed to submit review. Please try again.');
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
@@ -127,7 +138,7 @@ const TailorPortfolioPage = () => {
           <div className="flex flex-col lg:flex-row gap-8">
             <div className="lg:w-1/3">
               <img
-                src={tailor.image}
+                src={tailor.portfolio[0]}
                 alt={tailor.name}
                 className="w-full h-80 object-cover rounded-xl"
               />
@@ -397,41 +408,48 @@ const TailorPortfolioPage = () => {
               </div>
               
               <div className="flex-1 p-4 overflow-y-auto space-y-3">
-                {chatMessages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex ${msg.isCustomer ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-xs px-3 py-2 rounded-lg ${
-                        msg.isCustomer
-                          ? 'bg-tailor-primary text-white'
-                          : 'bg-slate-100 text-slate-800'
-                      }`}
-                    >
-                      <p className="text-sm">{msg.message}</p>
-                      <p className="text-xs opacity-70 mt-1">{msg.timestamp}</p>
-                    </div>
+                {error && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-red-600 text-sm">{error}</p>
                   </div>
-                ))}
+                )}
+                <div className="text-center text-slate-500 text-sm">
+                  <p>Send an inquiry to {tailor.name}</p>
+                  <p>They will respond to your message soon.</p>
+                </div>
               </div>
               
               <div className="p-4 border-t">
-                <div className="flex space-x-2">
+                <div className="space-y-3">
                   <input
                     type="text"
-                    value={chatMessage}
-                    onChange={(e) => setChatMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                    placeholder="Type your message..."
-                    className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-tailor-primary"
+                    value={inquirySubject}
+                    onChange={(e) => setInquirySubject(e.target.value)}
+                    placeholder="Subject (e.g., Custom suit inquiry)"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-tailor-primary"
                   />
-                  <button
-                    onClick={handleSendMessage}
-                    className="px-4 py-2 bg-tailor-primary text-white rounded-lg hover:bg-tailor-secondary transition-colors duration-300"
-                  >
-                    <Send className="w-4 h-4" />
-                  </button>
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={chatMessage}
+                      onChange={(e) => setChatMessage(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && !sendingInquiry && handleSendMessage()}
+                      placeholder="Type your message..."
+                      className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-tailor-primary"
+                    />
+                    <button
+                      onClick={handleSendMessage}
+                      disabled={sendingInquiry || !inquirySubject.trim() || !chatMessage.trim()}
+                      className="px-4 py-2 bg-tailor-primary text-white rounded-lg hover:bg-tailor-secondary transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                    >
+                      {sendingInquiry ? (
+                        <Loader className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                      <span>{sendingInquiry ? 'Sending...' : 'Send'}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -504,13 +522,16 @@ const TailorPortfolioPage = () => {
                 <div className="flex space-x-3">
                   <button
                     onClick={handleSubmitReview}
-                    className="flex-1 bg-tailor-primary text-white py-2 rounded-lg font-semibold hover:bg-tailor-secondary transition-colors duration-300"
+                    disabled={submittingReview || !newReview.comment.trim()}
+                    className="flex-1 bg-tailor-primary text-white py-2 rounded-lg font-semibold hover:bg-tailor-secondary transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                   >
-                    Submit Review
+                    {submittingReview && <Loader className="w-4 h-4 animate-spin" />}
+                    <span>{submittingReview ? 'Submitting...' : 'Submit Review'}</span>
                   </button>
                   <button
                     onClick={() => setShowReviewModal(false)}
-                    className="flex-1 border border-slate-300 text-slate-600 py-2 rounded-lg font-semibold hover:bg-slate-50 transition-colors duration-300"
+                    disabled={submittingReview}
+                    className="flex-1 border border-slate-300 text-slate-600 py-2 rounded-lg font-semibold hover:bg-slate-50 transition-colors duration-300 disabled:opacity-50"
                   >
                     Cancel
                   </button>

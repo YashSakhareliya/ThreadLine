@@ -239,7 +239,7 @@ const AllTailorsPage = () => {
             >
               <div className="relative overflow-hidden rounded-xl mb-4">
                 <img
-                  src={tailor.image || '/placeholder.svg'}
+                  src={tailor.portfolio[0] || '/placeholder.svg'}
                   alt={tailor.name}
                   className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500"
                 />

@@ -37,8 +37,8 @@ router.route('/')
 
 router.route('/:id')
   .get(optionalAuth, getFabric)
-  .put(protect, authorize('shop'), checkOwnership(Fabric), updateFabric)
-  .delete(protect, authorize('shop'), checkOwnership(Fabric), deleteFabric);
+  .put(protect, authorize('shop'), updateFabric)
+  .delete(protect, authorize('shop'), deleteFabric);
 
 router.route('/:id/reviews')
   .post(protect, authorize('customer'), reviewValidation, addFabricReview);

@@ -23,18 +23,18 @@ const updateQuantityValidation = [
 
 // Routes
 router.route('/')
-  .get(protect, authorize('customer'), getCart);
+  .get(protect, getCart);
 
 router.route('/add')
-  .post(protect, authorize('customer'), addToCartValidation, addToCart);
+  .post(protect, addToCartValidation, addToCart);
 
 router.route('/update/:fabricId')
-  .put(protect, authorize('customer'), updateQuantityValidation, updateCartItemQuantity);
+  .put(protect, updateQuantityValidation, updateCartItemQuantity);
 
 router.route('/remove/:fabricId')
-  .delete(protect, authorize('customer'), removeFromCart);
+  .delete(protect, removeFromCart);
 
 router.route('/clear')
-  .delete(protect, authorize('customer'), clearCart);
+  .delete(protect, clearCart);
 
 export default router;

@@ -1,4 +1,6 @@
 import User from '../models/User.js';
+import Tailor from '../models/Tailor.js';
+import Shop from '../models/Shop.js';
 import generateToken from '../utils/generateToken.js';
 import { validationResult } from 'express-validator';
 import { sendWelcomeEmail } from '../utils/emailService.js';
@@ -40,6 +42,51 @@ export const register = async (req, res) => {
     });
 
     if (user) {
+      let additionalData = {};
+
+      // Create tailor profile if user role is tailor
+      if (user.role === 'tailor') {
+        try {
+          const tailorProfile = await Tailor.create({
+            owner: user._id,
+            name: user.name,
+            bio: `Professional tailor with expertise in various clothing alterations and custom tailoring.`,
+            email: user.email,
+            phone: user.phone || '+1234567890',
+            city: user.address?.city || 'Not specified',
+            specialization: ['Alterations'],
+            experience: 0,
+            priceRange: '$50-$200',
+            address: user.address || {}
+          });
+          additionalData.tailorProfile = tailorProfile;
+        } catch (tailorError) {
+          console.error('Error creating tailor profile:', tailorError);
+          // Don't fail registration if tailor profile creation fails
+        }
+      }
+
+      // Create shop profile if user role is shop
+      if (user.role === 'shop') {
+        try {
+          const shopProfile = await Shop.create({
+            owner: user._id,
+            name: `${user.name}'s Fabric Shop`,
+            description: 'Quality fabrics and materials for all your tailoring needs.',
+            email: user.email,
+            phone: user.phone || '+1234567890',
+            address: user.address?.street || 'Not specified',
+            city: user.address?.city || 'Not specified',
+            state: user.address?.state || 'Not specified',
+            zipCode: user.address?.zipCode || '000000'
+          });
+          additionalData.shopProfile = shopProfile;
+        } catch (shopError) {
+          console.error('Error creating shop profile:', shopError);
+          // Don't fail registration if shop profile creation fails
+        }
+      }
+
       // Send welcome email (disabled for development)
     // try {
     //   await sendWelcomeEmail(user.email, user.name);
@@ -53,7 +100,8 @@ export const register = async (req, res) => {
         message: 'User registered successfully',
         data: {
           user: user.toJSON(),
-          token: generateToken(user._id)
+          token: generateToken(user._id),
+          ...additionalData
         }
       });
     } else {
