@@ -127,7 +127,7 @@ const TailorPortfolioPage = () => {
           <div className="flex flex-col lg:flex-row gap-8">
             <div className="lg:w-1/3">
               <img
-                src={tailor.image}
+                src={tailor.portfolio[0]}
                 alt={tailor.name}
                 className="w-full h-80 object-cover rounded-xl"
               />
