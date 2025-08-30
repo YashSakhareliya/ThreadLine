@@ -11,7 +11,8 @@ const initialState = {
     experience: '',
     rating: '',
     priceRange: '',
-    sortBy: 'rating'
+    sortBy: 'rating',
+    searchQuery: ''
   },
 };
 
@@ -50,6 +51,17 @@ const tailorsSlice = createSlice({
         filtered = filtered.filter(tailor => tailor.rating >= minRating);
       }
       
+      if (state.filters.searchQuery) {
+        filtered = filtered.filter(tailor => 
+          tailor.name.toLowerCase().includes(state.filters.searchQuery.toLowerCase()) ||
+          tailor.bio.toLowerCase().includes(state.filters.searchQuery.toLowerCase()) ||
+          tailor.city.toLowerCase().includes(state.filters.searchQuery.toLowerCase()) ||
+          tailor.specialization.some(skill => 
+            skill.toLowerCase().includes(state.filters.searchQuery.toLowerCase())
+          )
+        );
+      }
+      
       filtered.sort((a, b) => {
         switch (state.filters.sortBy) {
           case 'rating':
@@ -74,7 +86,8 @@ const tailorsSlice = createSlice({
         experience: '',
         rating: '',
         priceRange: '',
-        sortBy: 'rating'
+        sortBy: 'rating',
+        searchQuery: ''
       };
       state.filteredTailors = state.tailors;
     },

@@ -1,7 +1,8 @@
 import api from './api';
 
-const getMyOrders = () => {
-  return api.get('/orders');
+const getMyOrders = (params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return api.get(`/orders${queryString ? `?${queryString}` : ''}`);
 };
 
 const getOrderById = (id) => {

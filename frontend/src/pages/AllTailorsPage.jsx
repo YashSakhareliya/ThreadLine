@@ -45,7 +45,7 @@ const AllTailorsPage = () => {
   const handleSearch = ({ query, city }) => {
     dispatch(setFilters({ 
       city: city || '',
-      // Note: search query on specialization is handled by redux slice now
+      searchQuery: query || ''
     }));
   };
 
@@ -306,27 +306,36 @@ const AllTailorsPage = () => {
                 )}
 
                 {/* Reviews Preview */}
-                <div className="bg-slate-50 p-3 rounded-lg">
-                  <h4 className="text-sm font-semibold text-slate-700 mb-2">Recent Review</h4>
-                  <div className="flex items-center space-x-2 mb-1">
-                    <div className="flex">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-3 h-3 ${
-                            i < Math.floor(tailor.rating) 
-                              ? 'text-yellow-500 fill-current' 
-                              : 'text-slate-300'
-                          }`}
-                        />
-                      ))}
+                {tailor.reviews && tailor.reviews.length > 0 ? (
+                  <div className="bg-slate-50 p-3 rounded-lg">
+                    <h4 className="text-sm font-semibold text-slate-700 mb-2">Recent Review</h4>
+                    <div className="flex items-center space-x-2 mb-1">
+                      <div className="flex">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-3 h-3 ${
+                              i < Math.floor(tailor.reviews[0].rating) 
+                                ? 'text-yellow-500 fill-current' 
+                                : 'text-slate-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-xs text-slate-600">by {tailor.reviews[0].customerName}</span>
                     </div>
-                    <span className="text-xs text-slate-600">by Priya S.</span>
+                    <p className="text-xs text-slate-600">
+                      "{tailor.reviews[0].comment}"
+                    </p>
                   </div>
-                  <p className="text-xs text-slate-600">
-                    "Excellent work on my wedding lehenga. Highly recommended!"
-                  </p>
-                </div>
+                ) : (
+                  <div className="bg-slate-50 p-3 rounded-lg">
+                    <h4 className="text-sm font-semibold text-slate-700 mb-2">Reviews</h4>
+                    <p className="text-xs text-slate-500">
+                      No reviews yet. Be the first to review this tailor!
+                    </p>
+                  </div>
+                )}
 
                 <div className="flex space-x-2">
                   <motion.button
@@ -341,7 +350,7 @@ const AllTailorsPage = () => {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => handleContactTailor(tailor)}
+                    onClick={() => navigate(`/tailor/${tailor._id}`)}
                     className="px-4 py-3 border-2 border-tailor-primary text-tailor-primary rounded-xl font-semibold hover:bg-tailor-primary hover:text-white transition-all duration-300"
                   >
                     <MessageCircle className="w-4 h-4" />

@@ -19,6 +19,7 @@ import FabricDetailsPage from './pages/FabricDetailsPage';
 import ShopDetailsPage from './pages/ShopDetailsPage';
 import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
+import OrdersPage from './pages/OrdersPage';
 import CustomerDashboard from './pages/customer/CustomerDashboard';
 import CustomerProfile from './pages/customer/CustomerProfile';
 import TailorDashboard from './pages/tailor/TailorDashboard';
@@ -105,6 +106,14 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={['customer']}>
                       <CheckoutPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/orders" 
+                  element={
+                    <ProtectedRoute allowedRoles={['customer']}>
+                      <OrdersPage />
                     </ProtectedRoute>
                   } 
                 />

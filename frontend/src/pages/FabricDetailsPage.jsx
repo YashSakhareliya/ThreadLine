@@ -19,7 +19,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { addToCart } from '../store/slices/cartSlice';
+import { addToCartAsync } from '../store/slices/cartSlice';
 import { useDispatch } from 'react-redux';
 import fabricService from '../services/fabricService';
 import shopService from '../services/shopService';
@@ -64,7 +64,7 @@ const FabricDetailsPage = () => {
 
   const handleAddToCart = () => {
     if (user && user.role === 'customer' && fabric) {
-      dispatch(addToCart({ fabric, quantity: 1 }));
+      dispatch(addToCartAsync({ fabricId: fabric._id, quantity: 1 }));
     }
   };
 

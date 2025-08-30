@@ -255,7 +255,7 @@ const TailorDashboard = () => {
   };
 
   const stats = [
-    { label: 'Profile Views', value: 245, icon: Eye, color: 'text-blue-600' },
+    { label: 'Total Reviews', value: tailorProfile?.totalReviews || 0, icon: Eye, color: 'text-blue-600' },
     { label: 'Customer Inquiries', value: inquiries.length, icon: MessageCircle, color: 'text-green-600' },
     { label: 'Average Rating', value: tailorProfile?.rating?.toFixed(1) || '0.0', icon: Star, color: 'text-yellow-600' },
     { label: 'Completed Projects', value: tailorProfile?.completedProjects || 0, icon: Award, color: 'text-purple-600' }

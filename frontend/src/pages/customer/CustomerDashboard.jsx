@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -16,42 +16,166 @@ import SearchBar from '../../components/common/SearchBar';
 import ShopCard from '../../components/cards/ShopCard';
 import TailorCard from '../../components/cards/TailorCard';
 import OrderCard from '../../components/cards/OrderCard';
-import { fabricShops, tailors, orders } from '../../data/mockData';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSelector } from 'react-redux';
+import customerService from '../../services/customerService';
+import shopService from '../../services/shopService';
+import tailorService from '../../services/tailorService';
+import orderService from '../../services/orderService';
 
 const CustomerDashboard = () => {
   const { user } = useAuth();
   const { orders } = useSelector((state) => state.orders);
   const [activeTab, setActiveTab] = useState('overview');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [customerData, setCustomerData] = useState(null);
+  const [dashboardStats, setDashboardStats] = useState(null);
+  const [allShops, setAllShops] = useState([]);
+  const [allTailors, setAllTailors] = useState([]);
+  const [userOrders, setUserOrders] = useState([]);
 
-  const userOrders = orders
-    .filter((order) => order.customerId === user?.id)
-    .slice(0, 3);
-  const recentShops = fabricShops.slice(0, 3);
-  const featuredTailors = tailors.slice(0, 2);
+  // Fetch customer data and dashboard stats
+  useEffect(() => {
+    const fetchCustomerData = async () => {
+      if (!user?._id) return;
+      
+      try {
+        setLoading(true);
+        const [dashboardResponse, shopsResponse, tailorsResponse, ordersResponse] = await Promise.all([
+          customerService.getDashboardStats(),
+          shopService.getAllShops(),
+          tailorService.getAllTailors(),
+          orderService.getMyOrders()
+        ]);
+
+        if (dashboardResponse.success) {
+          setCustomerData(dashboardResponse.data.customer);
+          setDashboardStats(dashboardResponse.data.stats);
+          setUserOrders(dashboardResponse.data.recentOrders || []);
+        }
+
+        if (shopsResponse.success) {
+          setAllShops(shopsResponse.data || []);
+        }
+
+        if (tailorsResponse.success) {
+          setAllTailors(tailorsResponse.data || []);
+        }
+
+        if (ordersResponse.success) {
+          setUserOrders(ordersResponse.data || []);
+        }
+
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching customer data:', err);
+        setError('Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCustomerData();
+  }, [user]);
+
+  const recentShops = allShops.slice(0, 3);
+  const featuredTailors = allTailors.slice(0, 2);
 
   const stats = [
     {
       label: 'Total Orders',
-      value: userOrders.length,
+      value: dashboardStats?.totalOrders || 0,
       icon: Package,
       color: 'text-blue-600',
     },
-    { label: 'Favorite Shops', value: 5, icon: Heart, color: 'text-red-600' },
+    { 
+      label: 'Favorite Shops', 
+      value: dashboardStats?.favoriteShops || 0, 
+      icon: Heart, 
+      color: 'text-red-600' 
+    },
     {
-      label: 'Cities Explored',
-      value: 3,
-      icon: MapPin,
+      label: 'Favorite Tailors',
+      value: dashboardStats?.favoriteTailors || 0,
+      icon: Scissors,
       color: 'text-green-600',
     },
-    { label: 'Reviews Given', value: 8, icon: Star, color: 'text-yellow-600' },
+    { 
+      label: 'Total Spent', 
+      value: `₹${dashboardStats?.totalSpent?.toLocaleString() || 0}`, 
+      icon: Star, 
+      color: 'text-yellow-600' 
+    },
   ];
 
   const handleSearch = ({ query, city }) => {
     console.log('Search:', { query, city });
     // Navigate to search results
   };
+
+  const handleToggleFavoriteShop = async (shopId) => {
+    try {
+      if (customerData?.favoriteShops?.includes(shopId)) {
+        await customerService.removeFavoriteShop(shopId);
+      } else {
+        await customerService.addFavoriteShop(shopId);
+      }
+      // Refresh customer data
+      const response = await customerService.getDashboardStats();
+      if (response.success) {
+        setCustomerData(response.data.customer);
+        setDashboardStats(response.data.stats);
+      }
+    } catch (error) {
+      console.error('Error toggling favorite shop:', error);
+    }
+  };
+
+  const handleToggleFavoriteTailor = async (tailorId) => {
+    try {
+      if (customerData?.favoriteTailors?.includes(tailorId)) {
+        await customerService.removeFavoriteTailor(tailorId);
+      } else {
+        await customerService.addFavoriteTailor(tailorId);
+      }
+      // Refresh customer data
+      const response = await customerService.getDashboardStats();
+      if (response.success) {
+        setCustomerData(response.data.customer);
+        setDashboardStats(response.data.stats);
+      }
+    } catch (error) {
+      console.error('Error toggling favorite tailor:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen pt-20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-customer-primary mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen pt-20 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="btn-primary"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const tabs = [
     { id: 'overview', name: 'Overview', icon: TrendingUp },
@@ -302,7 +426,12 @@ const CustomerDashboard = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {recentShops.map((shop) => (
-                    <ShopCard key={shop.id} shop={shop} />
+                    <ShopCard 
+                      key={shop._id} 
+                      shop={shop} 
+                      isFavorite={customerData?.favoriteShops?.includes(shop._id)}
+                      onToggleFavorite={() => handleToggleFavoriteShop(shop._id)}
+                    />
                   ))}
                 </div>
               </div>
@@ -338,27 +467,69 @@ const CustomerDashboard = () => {
 
           {activeTab === 'shops' && (
             <div>
-              <h2 className="text-2xl font-bold text-slate-800 mb-6">
-                Browse Fabric Shops
-              </h2>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-slate-800">
+                  Browse Fabric Shops
+                </h2>
+                <div className="text-sm text-slate-600">
+                  {customerData?.favoriteShops?.length || 0} favorites
+                </div>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {fabricShops.map((shop) => (
-                  <ShopCard key={shop.id} shop={shop} />
+                {allShops.map((shop) => (
+                  <ShopCard 
+                    key={shop._id} 
+                    shop={shop} 
+                    isFavorite={customerData?.favoriteShops?.includes(shop._id)}
+                    onToggleFavorite={() => handleToggleFavoriteShop(shop._id)}
+                  />
                 ))}
               </div>
+              {allShops.length === 0 && (
+                <div className="text-center py-12">
+                  <ShoppingBag className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-slate-600 mb-2">
+                    No shops found
+                  </h3>
+                  <p className="text-slate-500">
+                    Check back later for new fabric shops
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
           {activeTab === 'tailors' && (
             <div>
-              <h2 className="text-2xl font-bold text-slate-800 mb-6">
-                Find Expert Tailors
-              </h2>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-slate-800">
+                  Find Expert Tailors
+                </h2>
+                <div className="text-sm text-slate-600">
+                  {customerData?.favoriteTailors?.length || 0} favorites
+                </div>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {tailors.map((tailor) => (
-                  <TailorCard key={tailor.id} tailor={tailor} />
+                {allTailors.map((tailor) => (
+                  <TailorCard 
+                    key={tailor._id} 
+                    tailor={tailor} 
+                    isFavorite={customerData?.favoriteTailors?.includes(tailor._id)}
+                    onToggleFavorite={() => handleToggleFavoriteTailor(tailor._id)}
+                  />
                 ))}
               </div>
+              {allTailors.length === 0 && (
+                <div className="text-center py-12">
+                  <Scissors className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-slate-600 mb-2">
+                    No tailors found
+                  </h3>
+                  <p className="text-slate-500">
+                    Check back later for expert tailors in your area
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </motion.div>

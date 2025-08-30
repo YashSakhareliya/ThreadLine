@@ -1,18 +1,32 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ShoppingCart, Package, Palette, Ruler } from 'lucide-react';
+import { ShoppingCart, Package, Palette, Ruler, Plus, Minus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useDispatch } from 'react-redux';
-import { addToCart } from '../../store/slices/cartSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { addToCartAsync } from '../../store/slices/cartSlice';
 
 const FabricCard = ({ fabric }) => {
   const dispatch = useDispatch();
   const { user } = useAuth();
+  const { loading } = useSelector(state => state.cart);
+  const [quantity, setQuantity] = useState(1);
 
   const handleAddToCart = () => {
     if (user && user.role === 'customer') {
-      dispatch(addToCart({ fabric, quantity: 1 }));
+      dispatch(addToCartAsync({ fabricId: fabric._id, quantity }));
+    }
+  };
+
+  const increaseQuantity = () => {
+    if (quantity < fabric.stock) {
+      setQuantity(prev => prev + 1);
+    }
+  };
+
+  const decreaseQuantity = () => {
+    if (quantity > 1) {
+      setQuantity(prev => prev - 1);
     }
   };
 
@@ -72,16 +86,40 @@ const FabricCard = ({ fabric }) => {
         </div>
 
         {user && user.role === 'customer' && (
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleAddToCart}
-            disabled={fabric.stock === 0}
-            className="w-full flex items-center justify-center space-x-2 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <ShoppingCart className="w-4 h-4" />
-            <span>{fabric.stock === 0 ? 'Out of Stock' : 'Add to Cart'}</span>
-          </motion.button>
+          <div className="space-y-3">
+            {/* Quantity Selector */}
+            <div className="flex items-center justify-center space-x-3">
+              <button
+                onClick={decreaseQuantity}
+                disabled={quantity <= 1}
+                className="w-8 h-8 rounded-full border border-customer-primary text-customer-primary hover:bg-customer-primary hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              >
+                <Minus className="w-4 h-4" />
+              </button>
+              <span className="text-lg font-semibold min-w-[2rem] text-center">{quantity}</span>
+              <button
+                onClick={increaseQuantity}
+                disabled={quantity >= fabric.stock}
+                className="w-8 h-8 rounded-full border border-customer-primary text-customer-primary hover:bg-customer-primary hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+            
+            {/* Add to Cart Button */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleAddToCart}
+              disabled={fabric.stock === 0 || loading}
+              className="w-full flex items-center justify-center space-x-2 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ShoppingCart className="w-4 h-4" />
+              <span>
+                {loading ? 'Adding...' : fabric.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
+              </span>
+            </motion.button>
+          </div>
         )}
       </div>
     </motion.div>

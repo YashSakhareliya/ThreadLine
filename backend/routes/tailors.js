@@ -33,12 +33,12 @@ const tailorValidation = [
 
 const reviewValidation = [
   body('rating').isInt({ min: 1, max: 5 }).withMessage('Rating must be between 1 and 5'),
-  body('comment').trim().isLength({ min: 5, max: 500 }).withMessage('Comment must be between 5 and 500 characters')
+  body('comment').trim().isLength({ min: 1, max: 500 }).withMessage('Comment must be between 1 and 500 characters')
 ];
 
 const inquiryValidation = [
-  body('subject').trim().isLength({ min: 5, max: 200 }).withMessage('Subject must be between 5 and 200 characters'),
-  body('message').trim().isLength({ min: 10, max: 1000 }).withMessage('Message must be between 10 and 1000 characters')
+  body('subject').trim().isLength({ min: 1, max: 200 }).withMessage('Subject must be between 1 and 200 characters'),
+  body('message').trim().isLength({ min: 1, max: 1000 }).withMessage('Message must be between 1 and 1000 characters')
 ];
 
 const replyValidation = [

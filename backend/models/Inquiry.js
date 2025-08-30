@@ -36,6 +36,10 @@ const inquirySchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  customerProfile: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Customer'
+  },
   customerName: {
     type: String,
     required: true

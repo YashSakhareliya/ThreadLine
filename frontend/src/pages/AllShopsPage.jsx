@@ -73,7 +73,8 @@ const AllShopsPage = () => {
     if (query) {
       filtered = filtered.filter(shop =>
         shop.name.toLowerCase().includes(query.toLowerCase()) ||
-        shop.description.toLowerCase().includes(query.toLowerCase())
+        shop.description.toLowerCase().includes(query.toLowerCase()) ||
+        shop.city.toLowerCase().includes(query.toLowerCase())
       );
     }
 

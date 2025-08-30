@@ -11,7 +11,8 @@ const initialState = {
     color: '',
     material: '',
     city: '',
-    sortBy: 'name'
+    sortBy: 'name',
+    searchQuery: ''
   },
 };
 
@@ -56,6 +57,16 @@ const fabricsSlice = createSlice({
         );
       }
       
+      if (state.filters.searchQuery) {
+        filtered = filtered.filter(fabric => 
+          fabric.name.toLowerCase().includes(state.filters.searchQuery.toLowerCase()) ||
+          fabric.description.toLowerCase().includes(state.filters.searchQuery.toLowerCase()) ||
+          fabric.material.toLowerCase().includes(state.filters.searchQuery.toLowerCase()) ||
+          fabric.color.toLowerCase().includes(state.filters.searchQuery.toLowerCase()) ||
+          fabric.category.toLowerCase().includes(state.filters.searchQuery.toLowerCase())
+        );
+      }
+      
       // Apply sorting
       filtered.sort((a, b) => {
         switch (state.filters.sortBy) {
@@ -81,7 +92,8 @@ const fabricsSlice = createSlice({
         color: '',
         material: '',
         city: '',
-        sortBy: 'name'
+        sortBy: 'name',
+        searchQuery: ''
       };
       state.filteredFabrics = state.fabrics;
     },

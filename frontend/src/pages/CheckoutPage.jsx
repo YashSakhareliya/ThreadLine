@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -8,13 +8,17 @@ import {
   Edit, 
   Trash2,
   Shield,
-  CheckCircle
+  CheckCircle,
+  Loader
 } from 'lucide-react';
-import { useCart } from '../contexts/CartContext';
+import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../contexts/AuthContext';
+import { fetchCart, clearCartAsync } from '../store/slices/cartSlice';
+import orderService from '../services/orderService';
 
 const CheckoutPage = () => {
-  const { cartItems, getTotalPrice, clearCart } = useCart();
+  const dispatch = useDispatch();
+  const { items, totalItems, totalAmount, loading, error } = useSelector(state => state.cart);
   const { user } = useAuth();
   const navigate = useNavigate();
   
@@ -22,6 +26,13 @@ const CheckoutPage = () => {
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
+  const [orderError, setOrderError] = useState(null);
+
+  useEffect(() => {
+    if (user) {
+      dispatch(fetchCart());
+    }
+  }, [dispatch, user]);
   
   const [addresses] = useState([
     {
@@ -50,53 +61,61 @@ const CheckoutPage = () => {
     phone: ''
   });
 
-  const subtotal = getTotalPrice();
+  const subtotal = totalAmount || 0;
   const shipping = 100;
   const tax = Math.round(subtotal * 0.18);
   const total = subtotal + shipping + tax;
 
+  const cartItems = items || [];
+
   const handlePayment = async () => {
+    if (!cartItems.length) {
+      setOrderError('Your cart is empty');
+      return;
+    }
+
     setProcessing(true);
+    setOrderError(null);
     
-    // Simulate Razorpay integration
-    const options = {
-      key: 'rzp_test_1234567890', // Test key
-      amount: total * 100, // Amount in paise
-      currency: 'INR',
-      name: 'ThreadLine',
-      description: 'Fabric Purchase',
-      image: '/logo.png',
-      handler: function (response) {
-        console.log('Payment successful:', response);
-        setProcessing(false);
+    try {
+      // Create order data
+      const orderData = {
+        items: cartItems.map(item => ({
+          fabricId: item.fabric._id,
+          quantity: item.quantity,
+          price: item.price
+        })),
+        shippingAddress: {
+          name: addresses[selectedAddress].name,
+          address: addresses[selectedAddress].address,
+          city: addresses[selectedAddress].city,
+          pincode: addresses[selectedAddress].pincode,
+          phone: addresses[selectedAddress].phone
+        },
+        paymentMethod: 'razorpay',
+        totalAmount: total
+      };
+
+      // Create order in backend
+      const response = await orderService.createOrder(orderData);
+      
+      if (response.data.success) {
+        // Clear cart after successful order creation
+        await dispatch(clearCartAsync());
         setOrderComplete(true);
         
-        // Clear cart after successful payment
         setTimeout(() => {
-          clearCart();
           navigate('/customer/dashboard');
         }, 3000);
-      },
-      prefill: {
-        name: user?.name || '',
-        email: user?.email || '',
-        contact: addresses[selectedAddress]?.phone || ''
-      },
-      theme: {
-        color: '#4F46E5'
+      } else {
+        throw new Error(response.data.message || 'Failed to create order');
       }
-    };
-
-    // In a real app, you would load Razorpay script and create order
-    // For demo purposes, we'll simulate success after 2 seconds
-    setTimeout(() => {
+    } catch (error) {
+      console.error('Order creation error:', error);
+      setOrderError(error.response?.data?.message || error.message || 'Failed to place order');
+    } finally {
       setProcessing(false);
-      setOrderComplete(true);
-      setTimeout(() => {
-        clearCart();
-        navigate('/customer/dashboard');
-      }, 3000);
-    }, 2000);
+    }
   };
 
   if (orderComplete) {
@@ -291,24 +310,32 @@ const CheckoutPage = () => {
 
               {/* Items */}
               <div className="space-y-3 mb-6">
-                {cartItems.map((item) => (
-                  <div key={item.id} className="flex space-x-3">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-12 h-12 object-cover rounded-lg"
-                    />
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-slate-800 text-sm">{item.name}</h4>
-                      <p className="text-xs text-slate-600">Qty: {item.quantity}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-slate-800">
-                        ₹{(item.price * item.quantity).toLocaleString()}
-                      </p>
-                    </div>
+                {loading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader className="w-6 h-6 animate-spin text-customer-primary" />
                   </div>
-                ))}
+                ) : cartItems.length === 0 ? (
+                  <p className="text-slate-600 text-center py-4">Your cart is empty</p>
+                ) : (
+                  cartItems.map((item) => (
+                    <div key={item._id} className="flex space-x-3">
+                      <img
+                        src={item.fabric.image}
+                        alt={item.fabric.name}
+                        className="w-12 h-12 object-cover rounded-lg"
+                      />
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-slate-800 text-sm">{item.fabric.name}</h4>
+                        <p className="text-xs text-slate-600">Qty: {item.quantity}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-slate-800">
+                          ₹{(item.price * item.quantity).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
 
               {/* Pricing */}
@@ -334,12 +361,19 @@ const CheckoutPage = () => {
                 </div>
               </div>
 
+              {/* Error Message */}
+              {orderError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+                  {orderError}
+                </div>
+              )}
+
               {/* Pay Button */}
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handlePayment}
-                disabled={processing}
+                disabled={processing || loading || cartItems.length === 0}
                 className="w-full flex items-center justify-center space-x-2 btn-primary mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {processing ? (
@@ -350,7 +384,7 @@ const CheckoutPage = () => {
                 ) : (
                   <>
                     <CreditCard className="w-5 h-5" />
-                    <span>Pay with Razorpay</span>
+                    <span>Place Order</span>
                   </>
                 )}
               </motion.button>
