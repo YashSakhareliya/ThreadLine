@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 text-slate-900;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-white/20 backdrop-blur-md border border-white/30;
+  }
+  
+  .glass-dark {
+    @apply bg-slate-900/20 backdrop-blur-md border border-slate-700/30;
+  }
+  
+  .btn-primary {
+    @apply px-6 py-3 bg-gradient-to-r from-customer-primary to-customer-secondary text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300;
+  }
+  
+  .btn-secondary {
+    @apply px-6 py-3 glass text-slate-700 rounded-xl font-semibold hover:bg-white/30 transform hover:scale-105 transition-all duration-300;
+  }
+  
+  .card {
+    @apply glass rounded-2xl p-6 shadow-xl hover:shadow-2xl transform hover:scale-[1.02] transition-all duration-300;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
+  
+  .card * {
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    text-rendering: optimizeLegibility !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+  }
+  
+  .card:hover {
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    text-rendering: optimizeLegibility !important;
+  }
+  
+  .card:hover * {
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    text-rendering: optimizeLegibility !important;
+    transform: translateZ(0) !important;
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-3 glass rounded-xl border-0 focus:ring-2 focus:ring-customer-primary/50 focus:bg-white/30 transition-all duration-300;
+  }
+}
