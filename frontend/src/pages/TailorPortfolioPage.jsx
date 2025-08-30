@@ -296,8 +296,8 @@ const TailorPortfolioPage = () => {
           </div>
 
           <div className="space-y-6">
-            {tailor.reviews?.map((review) => (
-              <div key={review.id} className="border-b border-slate-200 pb-6 last:border-b-0">
+            {tailor.reviews?.map((review, index) => (
+              <div key={review._id || index} className="border-b border-slate-200 pb-6 last:border-b-0">
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <h4 className="font-semibold text-slate-800">{review.customerName}</h4>
