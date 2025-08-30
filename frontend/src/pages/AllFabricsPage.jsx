@@ -41,10 +41,9 @@ const AllFabricsPage = () => {
   };
 
   const handleSearch = ({ query, city }) => {
-    // Apply search filters
     dispatch(setFilters({ 
       city: city || '',
-      // Add text search logic here if needed
+      searchQuery: query || ''
     }));
   };
 

@@ -45,7 +45,7 @@ const AllTailorsPage = () => {
   const handleSearch = ({ query, city }) => {
     dispatch(setFilters({ 
       city: city || '',
-      // Note: search query on specialization is handled by redux slice now
+      searchQuery: query || ''
     }));
   };
 
