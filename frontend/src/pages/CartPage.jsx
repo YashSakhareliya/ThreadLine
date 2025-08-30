@@ -1,14 +1,43 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingCart, ArrowRight, Trash2 } from 'lucide-react';
-import { useCart } from '../contexts/CartContext';
-import CartCard from '../components/cards/CartCard';
+import { ShoppingCart, ArrowRight, Trash2, Plus, Minus, X, Loader } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useAuth } from '../contexts/AuthContext';
+import { fetchCart, updateCartQuantityAsync, removeFromCartAsync, clearCartAsync } from '../store/slices/cartSlice';
 
 const CartPage = () => {
-  const { cartItems, clearCart, totalPrice, getTotalItems } = useCart();
+  const dispatch = useDispatch();
+  const { user } = useAuth();
+  const { items, totalItems, totalAmount, loading, error } = useSelector(state => state.cart);
 
-  if (cartItems.length === 0) {
+  useEffect(() => {
+    if (user && user.role === 'customer') {
+      dispatch(fetchCart());
+    }
+  }, [dispatch, user]);
+
+  const handleUpdateQuantity = (fabricId, quantity) => {
+    dispatch(updateCartQuantityAsync({ fabricId, quantity }));
+  };
+
+  const handleRemoveItem = (fabricId) => {
+    dispatch(removeFromCartAsync(fabricId));
+  };
+
+  const handleClearCart = () => {
+    dispatch(clearCartAsync());
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen pt-20 flex items-center justify-center">
+        <Loader className="w-12 h-12 animate-spin text-customer-primary" />
+      </div>
+    );
+  }
+
+  if (!items || items.length === 0) {
     return (
       <div className="min-h-screen pt-20 flex items-center justify-center">
         <motion.div
@@ -25,8 +54,8 @@ const CartPage = () => {
           <p className="text-slate-600 mb-8">
             Start shopping to add items to your cart
           </p>
-          <Link to="/shops" className="btn-primary">
-            Browse Shops
+          <Link to="/fabrics" className="btn-primary">
+            Browse Fabrics
           </Link>
         </motion.div>
       </div>
@@ -47,16 +76,17 @@ const CartPage = () => {
               Shopping Cart
             </h1>
             <p className="text-slate-600 mt-2">
-              {getTotalItems()} {getTotalItems() === 1 ? 'item' : 'items'} in your cart
+              {totalItems} {totalItems === 1 ? 'item' : 'items'} in your cart
             </p>
           </div>
           
-          {cartItems.length > 0 && (
+          {items.length > 0 && (
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={clearCart}
-              className="flex items-center space-x-2 text-red-600 hover:text-red-700 transition-colors duration-300"
+              onClick={handleClearCart}
+              disabled={loading}
+              className="flex items-center space-x-2 text-red-600 hover:text-red-700 transition-colors duration-300 disabled:opacity-50"
             >
               <Trash2 className="w-5 h-5" />
               <span>Clear Cart</span>
@@ -64,12 +94,92 @@ const CartPage = () => {
           )}
         </motion.div>
 
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6"
+          >
+            {error}
+          </motion.div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4">
             <AnimatePresence>
-              {cartItems.map((item) => (
-                <CartCard key={item.id} item={item} />
+              {items.map((item) => (
+                <motion.div
+                  key={item._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="card"
+                >
+                  <div className="flex items-center space-x-4">
+                    {/* Fabric Image */}
+                    <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
+                      <img
+                        src={item.fabric?.image || 'https://via.placeholder.com/80x80'}
+                        alt={item.fabric?.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+
+                    {/* Fabric Details */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-semibold text-slate-800 truncate">
+                        {item.fabric?.name}
+                      </h3>
+                      <p className="text-slate-600 text-sm">
+                        {item.fabric?.material} • {item.fabric?.color}
+                      </p>
+                      <p className="text-customer-primary font-semibold">
+                        ₹{item.price} per unit
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        Stock: {item.fabric?.stock} units
+                      </p>
+                    </div>
+
+                    {/* Quantity Controls */}
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => handleUpdateQuantity(item.fabric._id, item.quantity - 1)}
+                        disabled={item.quantity <= 1 || loading}
+                        className="w-8 h-8 rounded-full border border-customer-primary text-customer-primary hover:bg-customer-primary hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <span className="text-lg font-semibold min-w-[2rem] text-center">
+                        {item.quantity}
+                      </span>
+                      <button
+                        onClick={() => handleUpdateQuantity(item.fabric._id, item.quantity + 1)}
+                        disabled={item.quantity >= item.fabric?.stock || loading}
+                        className="w-8 h-8 rounded-full border border-customer-primary text-customer-primary hover:bg-customer-primary hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Subtotal */}
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-slate-800">
+                        ₹{item.subtotal.toLocaleString()}
+                      </p>
+                    </div>
+
+                    {/* Remove Button */}
+                    <button
+                      onClick={() => handleRemoveItem(item.fabric._id)}
+                      disabled={loading}
+                      className="text-red-500 hover:text-red-700 transition-colors disabled:opacity-50"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </motion.div>
               ))}
             </AnimatePresence>
           </div>
@@ -87,8 +197,8 @@ const CartPage = () => {
 
               <div className="space-y-4">
                 <div className="flex justify-between text-slate-600">
-                  <span>Subtotal ({getTotalItems()} items)</span>
-                  <span>₹{(totalPrice || 0).toLocaleString()}</span>
+                  <span>Subtotal ({totalItems} items)</span>
+                  <span>₹{(totalAmount || 0).toLocaleString()}</span>
                 </div>
                 
                 <div className="flex justify-between text-slate-600">
@@ -97,14 +207,14 @@ const CartPage = () => {
                 </div>
                 
                 <div className="flex justify-between text-slate-600">
-                  <span>Tax</span>
-                  <span>₹{Math.round((totalPrice || 0) * 0.18).toLocaleString()}</span>
+                  <span>Tax (18%)</span>
+                  <span>₹{Math.round((totalAmount || 0) * 0.18).toLocaleString()}</span>
                 </div>
                 
                 <div className="border-t border-slate-200 pt-4">
                   <div className="flex justify-between text-xl font-bold text-slate-800">
                     <span>Total</span>
-                    <span>₹{((totalPrice || 0) + 100 + Math.round((totalPrice || 0) * 0.18)).toLocaleString()}</span>
+                    <span>₹{((totalAmount || 0) + 100 + Math.round((totalAmount || 0) * 0.18)).toLocaleString()}</span>
                   </div>
                 </div>
               </div>
@@ -119,7 +229,7 @@ const CartPage = () => {
 
               <div className="mt-4 text-center">
                 <Link
-                  to="/shops"
+                  to="/fabrics"
                   className="text-customer-primary hover:text-customer-secondary transition-colors duration-300"
                 >
                   Continue Shopping
