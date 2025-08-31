@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   CreditCard, 
@@ -9,12 +9,14 @@ import {
   Trash2,
   Shield,
   CheckCircle,
-  Loader
+  Loader,
+  AlertCircle
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchCart, clearCartAsync } from '../store/slices/cartSlice';
 import orderService from '../services/orderService';
+import customerService from '../services/customerService';
 
 const CheckoutPage = () => {
   const dispatch = useDispatch();
@@ -27,37 +29,44 @@ const CheckoutPage = () => {
   const [processing, setProcessing] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
   const [orderError, setOrderError] = useState(null);
+  const [customerProfile, setCustomerProfile] = useState(null);
+  const [addresses, setAddresses] = useState([]);
+  const [addressLoading, setAddressLoading] = useState(true);
+  const [addingAddress, setAddingAddress] = useState(false);
 
   useEffect(() => {
     if (user) {
       dispatch(fetchCart());
+      fetchCustomerAddresses();
     }
   }, [dispatch, user]);
-  
-  const [addresses] = useState([
-    {
-      id: 1,
-      name: 'Home',
-      address: '123 Main Street, Apartment 4B',
-      city: 'Mumbai',
-      pincode: '400001',
-      phone: '+91 98765 43210'
-    },
-    {
-      id: 2,
-      name: 'Office',
-      address: '456 Business Park, Floor 3',
-      city: 'Mumbai',
-      pincode: '400002',
-      phone: '+91 98765 43211'
+
+  const fetchCustomerAddresses = async () => {
+    try {
+      setAddressLoading(true);
+      const response = await customerService.getCustomerProfile();
+      if (response.success) {
+        setCustomerProfile(response.data);
+        setAddresses(response.data.addresses || []);
+        // Set default address as selected
+        const defaultIndex = response.data.addresses?.findIndex(addr => addr.isDefault);
+        if (defaultIndex >= 0) {
+          setSelectedAddress(defaultIndex);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch addresses:', error);
+    } finally {
+      setAddressLoading(false);
     }
-  ]);
+  };
 
   const [newAddress, setNewAddress] = useState({
     name: '',
     address: '',
     city: '',
-    pincode: '',
+    state: '',
+    zipCode: '',
     phone: ''
   });
 
@@ -68,9 +77,48 @@ const CheckoutPage = () => {
 
   const cartItems = items || [];
 
+  const handleAddAddress = async () => {
+    if (!newAddress.name || !newAddress.address || !newAddress.city || !newAddress.state || !newAddress.zipCode || !newAddress.phone) {
+      setOrderError('Please fill all address fields');
+      return;
+    }
+
+    try {
+      setAddingAddress(true);
+      setOrderError(null);
+      
+      const addressData = {
+        ...newAddress,
+        isDefault: addresses.length === 0
+      };
+      
+      const response = await customerService.addAddress(addressData);
+      
+      if (response.success) {
+        setCustomerProfile(response.data);
+        setAddresses(response.data.addresses || []);
+        setNewAddress({ name: '', address: '', city: '', state: '', zipCode: '', phone: '' });
+        setShowAddressForm(false);
+        
+        // Select the newly added address
+        setSelectedAddress(response.data.addresses.length - 1);
+      }
+    } catch (error) {
+      console.error('Error adding address:', error);
+      setOrderError(error.response?.data?.message || 'Failed to add address');
+    } finally {
+      setAddingAddress(false);
+    }
+  };
+
   const handlePayment = async () => {
     if (!cartItems.length) {
       setOrderError('Your cart is empty');
+      return;
+    }
+
+    if (!addresses.length) {
+      setOrderError('Please add a shipping address first');
       return;
     }
 
@@ -78,6 +126,8 @@ const CheckoutPage = () => {
     setOrderError(null);
     
     try {
+      const selectedAddr = addresses[selectedAddress];
+      
       // Create order data
       const orderData = {
         items: cartItems.map(item => ({
@@ -86,11 +136,12 @@ const CheckoutPage = () => {
           price: item.price
         })),
         shippingAddress: {
-          name: addresses[selectedAddress].name,
-          address: addresses[selectedAddress].address,
-          city: addresses[selectedAddress].city,
-          pincode: addresses[selectedAddress].pincode,
-          phone: addresses[selectedAddress].phone
+          name: selectedAddr.name,
+          address: selectedAddr.address,
+          city: selectedAddr.city,
+          state: selectedAddr.state || 'Not Specified',
+          zipCode: selectedAddr.zipCode,
+          phone: selectedAddr.phone
         },
         paymentMethod: 'razorpay',
         totalAmount: total
@@ -169,7 +220,8 @@ const CheckoutPage = () => {
                 </h3>
                 <button
                   onClick={() => setShowAddressForm(!showAddressForm)}
-                  className="flex items-center space-x-2 text-customer-primary hover:text-customer-secondary transition-colors duration-300"
+                  disabled={addingAddress}
+                  className="flex items-center space-x-2 text-customer-primary hover:text-customer-secondary transition-colors duration-300 disabled:opacity-50"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Add New</span>
@@ -178,35 +230,61 @@ const CheckoutPage = () => {
 
               {/* Address List */}
               <div className="space-y-3 mb-6">
-                {addresses.map((address, index) => (
-                  <motion.div
-                    key={address.id}
-                    whileHover={{ scale: 1.02 }}
-                    className={`p-4 border-2 rounded-xl cursor-pointer transition-all duration-300 ${
-                      selectedAddress === index
-                        ? 'border-customer-primary bg-customer-light'
-                        : 'border-slate-200 hover:border-slate-300'
-                    }`}
-                    onClick={() => setSelectedAddress(index)}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-semibold text-slate-800">{address.name}</h4>
-                        <p className="text-slate-600 mt-1">{address.address}</p>
-                        <p className="text-slate-600">{address.city} - {address.pincode}</p>
-                        <p className="text-slate-600">{address.phone}</p>
+                {addressLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader className="w-6 h-6 animate-spin text-customer-primary" />
+                    <span className="ml-2 text-slate-600">Loading addresses...</span>
+                  </div>
+                ) : addresses.length === 0 ? (
+                  <div className="text-center py-8">
+                    <MapPin className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                    <h4 className="text-lg font-semibold text-slate-600 mb-2">No addresses found</h4>
+                    <p className="text-slate-500 mb-4">Add your first shipping address to continue</p>
+                    <Link 
+                      to="/customer/profile" 
+                      className="text-customer-primary hover:text-customer-secondary font-medium"
+                    >
+                      Go to Profile → Addresses
+                    </Link>
+                  </div>
+                ) : (
+                  addresses.map((address, index) => (
+                    <motion.div
+                      key={address._id}
+                      whileHover={{ scale: 1.02 }}
+                      className={`p-4 border-2 rounded-xl cursor-pointer transition-all duration-300 ${
+                        selectedAddress === index
+                          ? 'border-customer-primary bg-customer-light'
+                          : 'border-slate-200 hover:border-slate-300'
+                      }`}
+                      onClick={() => setSelectedAddress(index)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="flex items-center space-x-2 mb-1">
+                            <h4 className="font-semibold text-slate-800">{address.name}</h4>
+                            {address.isDefault && (
+                              <span className="px-2 py-1 bg-customer-primary text-white text-xs rounded-full">
+                                Default
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-slate-600 mt-1">{address.address}</p>
+                          <p className="text-slate-600">{address.city}, {address.state || 'N/A'} - {address.zipCode}</p>
+                          <p className="text-slate-600">{address.phone}</p>
+                        </div>
+                        <div className="flex space-x-2">
+                          <button className="p-1 text-slate-400 hover:text-customer-primary">
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button className="p-1 text-slate-400 hover:text-red-500">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex space-x-2">
-                        <button className="p-1 text-slate-400 hover:text-customer-primary">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button className="p-1 text-slate-400 hover:text-red-500">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  ))
+                )}
               </div>
 
               {/* Add Address Form */}
@@ -248,17 +326,34 @@ const CheckoutPage = () => {
                     />
                     <input
                       type="text"
-                      placeholder="Pincode"
-                      value={newAddress.pincode}
-                      onChange={(e) => setNewAddress({...newAddress, pincode: e.target.value})}
+                      placeholder="State"
+                      value={newAddress.state}
+                      onChange={(e) => setNewAddress({...newAddress, state: e.target.value})}
+                      className="input-field"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Zip Code"
+                      value={newAddress.zipCode}
+                      onChange={(e) => setNewAddress({...newAddress, zipCode: e.target.value})}
                       className="input-field"
                     />
                   </div>
                   <div className="flex space-x-4 mt-4">
-                    <button className="btn-primary">Save Address</button>
                     <button 
-                      onClick={() => setShowAddressForm(false)}
-                      className="btn-secondary"
+                      onClick={handleAddAddress}
+                      disabled={addingAddress}
+                      className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {addingAddress ? 'Saving...' : 'Save Address'}
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setShowAddressForm(false);
+                        setOrderError(null);
+                      }}
+                      disabled={addingAddress}
+                      className="btn-secondary disabled:opacity-50"
                     >
                       Cancel
                     </button>
@@ -363,8 +458,9 @@ const CheckoutPage = () => {
 
               {/* Error Message */}
               {orderError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
-                  {orderError}
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 flex items-center space-x-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{orderError}</span>
                 </div>
               )}
 
@@ -373,7 +469,7 @@ const CheckoutPage = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handlePayment}
-                disabled={processing || loading || cartItems.length === 0}
+                disabled={processing || loading || cartItems.length === 0 || addresses.length === 0}
                 className="w-full flex items-center justify-center space-x-2 btn-primary mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {processing ? (
@@ -384,7 +480,7 @@ const CheckoutPage = () => {
                 ) : (
                   <>
                     <CreditCard className="w-5 h-5" />
-                    <span>Place Order</span>
+                    <span>{addresses.length === 0 ? 'Add Address First' : 'Place Order'}</span>
                   </>
                 )}
               </motion.button>
