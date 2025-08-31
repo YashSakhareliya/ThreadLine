@@ -16,7 +16,8 @@ import {
   Minus,
   Truck,
   Shield,
-  RotateCcw
+  RotateCcw,
+  AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { addToCartAsync } from '../store/slices/cartSlice';
@@ -36,6 +37,10 @@ const FabricDetailsPage = () => {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [newReview, setNewReview] = useState({ rating: 5, comment: '', images: [] });
   const [isLiked, setIsLiked] = useState(false);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewError, setReviewError] = useState('');
+  const [canReview, setCanReview] = useState(false);
+  const [hasReviewed, setHasReviewed] = useState(false);
 
   useEffect(() => {
     const fetchFabricDetails = async () => {
@@ -43,6 +48,14 @@ const FabricDetailsPage = () => {
         const fabricRes = await fabricService.getFabricById(id);
         const fabricData = fabricRes.data.data;
         setFabric(fabricData);
+        
+        // Check if user has already reviewed this fabric
+        if (user && fabricData.reviews) {
+          const userReview = fabricData.reviews.find(
+            review => review.user === user.id || review.user._id === user.id
+          );
+          setHasReviewed(!!userReview);
+        }
         
         if (fabricData.shop) {
           // If populated, use the object directly; otherwise fetch by ID
@@ -60,7 +73,7 @@ const FabricDetailsPage = () => {
     };
 
     fetchFabricDetails();
-  }, [id]);
+  }, [id, user]);
 
   const handleAddToCart = () => {
     if (user && user.role === 'customer' && fabric) {
@@ -68,24 +81,40 @@ const FabricDetailsPage = () => {
     }
   };
 
-  const handleSubmitReview = () => {
-    if (newReview.comment.trim()) {
-      const review = {
-        id: Date.now(),
-        customerName: user?.name || 'Anonymous',
+  const handleSubmitReview = async () => {
+    if (!newReview.comment.trim()) {
+      setReviewError('Please write a review comment');
+      return;
+    }
+
+    setReviewLoading(true);
+    setReviewError('');
+
+    try {
+      await fabricService.addFabricReview(id, {
         rating: newReview.rating,
-        comment: newReview.comment,
-        date: new Date().toLocaleDateString(),
+        comment: newReview.comment.trim(),
         images: newReview.images
-      };
+      });
+
+      // Refresh fabric data to get updated reviews
+      const fabricRes = await fabricService.getFabricById(id);
+      const fabricData = fabricRes.data.data;
+      setFabric(fabricData);
       
-      setFabric(prev => ({
-        ...prev,
-        reviews: [review, ...prev.reviews]
-      }));
-      
+      // Update review status
+      setHasReviewed(true);
       setNewReview({ rating: 5, comment: '', images: [] });
       setShowReviewModal(false);
+    } catch (error) {
+      console.error('Failed to submit review:', error);
+      if (error.response?.data?.message) {
+        setReviewError(error.response.data.message);
+      } else {
+        setReviewError('Failed to submit review. Please try again.');
+      }
+    } finally {
+      setReviewLoading(false);
     }
   };
 
@@ -325,12 +354,24 @@ const FabricDetailsPage = () => {
                 <span className="text-slate-500">({fabric.reviews?.length || 0} reviews)</span>
               </div>
               {user && user.role === 'customer' && (
-                <button
-                  onClick={() => setShowReviewModal(true)}
-                  className="btn-primary"
-                >
-                  Write Review
-                </button>
+                <div className="flex flex-col items-end space-y-2">
+                  {hasReviewed ? (
+                    <div className="flex items-center space-x-2 text-green-600">
+                      <Star className="w-4 h-4 fill-current" />
+                      <span className="text-sm font-medium">You have reviewed this fabric</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setReviewError('');
+                        setShowReviewModal(true);
+                      }}
+                      className="btn-primary"
+                    >
+                      Write Review
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -444,12 +485,22 @@ const FabricDetailsPage = () => {
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-bold text-slate-800">Write a Review</h3>
                 <button
-                  onClick={() => setShowReviewModal(false)}
+                  onClick={() => {
+                    setShowReviewModal(false);
+                    setReviewError('');
+                  }}
                   className="p-1 text-slate-400 hover:text-slate-600"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
+              
+              {reviewError && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
+                  <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                  <span className="text-red-700 text-sm">{reviewError}</span>
+                </div>
+              )}
               
               <div className="space-y-4">
                 <div>
@@ -491,13 +542,18 @@ const FabricDetailsPage = () => {
                 <div className="flex space-x-3">
                   <button
                     onClick={handleSubmitReview}
-                    className="flex-1 bg-customer-primary text-white py-2 rounded-lg font-semibold hover:bg-customer-secondary transition-colors duration-300"
+                    disabled={reviewLoading || !newReview.comment.trim()}
+                    className="flex-1 bg-customer-primary text-white py-2 rounded-lg font-semibold hover:bg-customer-secondary transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Submit Review
+                    {reviewLoading ? 'Submitting...' : 'Submit Review'}
                   </button>
                   <button
-                    onClick={() => setShowReviewModal(false)}
-                    className="flex-1 border border-slate-300 text-slate-600 py-2 rounded-lg font-semibold hover:bg-slate-50 transition-colors duration-300"
+                    onClick={() => {
+                      setShowReviewModal(false);
+                      setReviewError('');
+                    }}
+                    disabled={reviewLoading}
+                    className="flex-1 border border-slate-300 text-slate-600 py-2 rounded-lg font-semibold hover:bg-slate-50 transition-colors duration-300 disabled:opacity-50"
                   >
                     Cancel
                   </button>
