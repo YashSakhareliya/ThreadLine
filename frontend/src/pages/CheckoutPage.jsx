@@ -143,7 +143,8 @@ const CheckoutPage = () => {
           zipCode: selectedAddr.zipCode,
           phone: selectedAddr.phone
         },
-        paymentMethod: 'razorpay',
+        paymentMethod: 'UPI',
+        shippingMethod: 'Standard Delivery',
         totalAmount: total
       };
 

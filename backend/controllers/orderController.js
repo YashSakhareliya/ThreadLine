@@ -100,7 +100,7 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    const { items, shippingAddress, paymentMethod, shippingMethod } = req.body;
+    const { items, shippingAddress, paymentMethod, shippingMethod, totalAmount } = req.body;
 
     if (!items || items.length === 0) {
       return res.status(400).json({
@@ -149,12 +149,17 @@ export const createOrder = async (req, res) => {
 
     // Calculate shipping cost
     const shippingCost = shippingMethod === 'Express Delivery' ? 100 : 
-                        shippingMethod === 'Same Day Delivery' ? 200 : 50;
+                        shippingMethod === 'Same Day Delivery' ? 200 : 100;
 
     // Calculate tax (18% GST)
-    const tax = subtotal * 0.18;
+    const tax = Math.round(subtotal * 0.18);
 
     const total = subtotal + shippingCost + tax;
+
+    // Calculate estimated delivery date
+    const deliveryDays = shippingMethod === 'Express Delivery' ? 2 : 
+                        shippingMethod === 'Same Day Delivery' ? 0 : 5;
+    const estimatedDelivery = new Date(Date.now() + deliveryDays * 24 * 60 * 60 * 1000);
 
     // Create order
     const order = await Order.create({
@@ -167,6 +172,7 @@ export const createOrder = async (req, res) => {
       total,
       shippingAddress,
       paymentMethod: paymentMethod || 'COD',
+      estimatedDelivery,
       shippingDetails: {
         method: shippingMethod || 'Standard Delivery',
         cost: shippingCost

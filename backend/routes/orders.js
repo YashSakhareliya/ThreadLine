@@ -21,7 +21,7 @@ const orderValidation = [
   body('shippingAddress.city').trim().notEmpty().withMessage('City is required'),
   body('shippingAddress.state').trim().notEmpty().withMessage('State is required'),
   body('shippingAddress.zipCode').trim().notEmpty().withMessage('Zip code is required'),
-  body('shippingAddress.phone').matches(/^\+?[1-9]\d{1,14}$/).withMessage('Please provide a valid phone number'),
+  body('shippingAddress.phone').isLength({ min: 10, max: 15 }).withMessage('Please provide a valid phone number'),
   body('paymentMethod').optional().isIn(['COD', 'Credit Card', 'Debit Card', 'UPI', 'Net Banking', 'Wallet']).withMessage('Invalid payment method'),
   body('shippingMethod').optional().isIn(['Standard Delivery', 'Express Delivery', 'Same Day Delivery']).withMessage('Invalid shipping method')
 ];
