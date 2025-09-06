@@ -37,46 +37,44 @@ const CustomerDashboard = () => {
 
   // Fetch customer data and dashboard stats
   useEffect(() => {
-    const fetchCustomerData = async () => {
+    const fetchDashboardData = async () => {
       if (!user?._id) return;
       
       try {
         setLoading(true);
-        const [dashboardResponse, shopsResponse, tailorsResponse, ordersResponse] = await Promise.all([
-          customerService.getDashboardStats(),
-          shopService.getAllShops(),
-          tailorService.getAllTailors(),
-          orderService.getMyOrders()
-        ]);
-
+        
+        // Fetch dashboard stats (includes customer profile, stats, and recent orders)
+        const dashboardResponse = await customerService.getDashboardStats();
         if (dashboardResponse.success) {
           setCustomerData(dashboardResponse.data.customer);
+          setUserOrders(dashboardResponse.data.recentOrders);
           setDashboardStats(dashboardResponse.data.stats);
-          setUserOrders(dashboardResponse.data.recentOrders || []);
         }
 
+        // Fetch shops and tailors for browse tabs
+        const [shopsResponse, tailorsResponse] = await Promise.all([
+          shopService.getAllShops(),
+          tailorService.getAllTailors()
+        ]);
+
         if (shopsResponse.success) {
-          setAllShops(shopsResponse.data || []);
+          setAllShops(shopsResponse.data);
         }
 
         if (tailorsResponse.success) {
-          setAllTailors(tailorsResponse.data || []);
+          setAllTailors(tailorsResponse.data);
         }
-
-        if (ordersResponse.success) {
-          setUserOrders(ordersResponse.data || []);
-        }
-
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching customer data:', err);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
         setError('Failed to load dashboard data');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCustomerData();
+    if (user) {
+      fetchDashboardData();
+    }
   }, [user]);
 
   const recentShops = allShops.slice(0, 3);
@@ -276,17 +274,16 @@ const CustomerDashboard = () => {
                     Recent Orders
                   </h2>
                   <Link
-                    to="#"
-                    onClick={() => setActiveTab('orders')}
+                    to="/orders"
                     className="text-customer-primary hover:text-customer-secondary"
                   >
                     View All
                   </Link>
                 </div>
                 <div className="space-y-4">
-                  {userOrders.map((order) => (
+                  {userOrders.map((order, index) => (
                     <motion.div
-                      key={order.id}
+                      key={order._id}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="card"
@@ -294,7 +291,7 @@ const CustomerDashboard = () => {
                       <div className="flex justify-between items-start mb-4">
                         <div>
                           <h3 className="text-lg font-bold text-slate-800">
-                            Order #{order.id}
+                            Order #{order._id.slice(-8).toUpperCase()}
                           </h3>
                           <div className="flex items-center space-x-2 text-slate-600 mt-1">
                             <Calendar className="w-4 h-4" />
@@ -378,7 +375,7 @@ const CustomerDashboard = () => {
                               className="flex justify-between text-sm"
                             >
                               <span className="text-slate-600">
-                                Fabric Item {item.fabricId}
+                                {item.fabric?.name || `Fabric Item ${item.fabricId}`}
                               </span>
                               <span className="text-slate-800">
                                 Qty: {item.quantity} × ₹{item.price}

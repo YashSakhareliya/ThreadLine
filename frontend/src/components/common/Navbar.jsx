@@ -152,13 +152,22 @@ const Navbar = () => {
                           Dashboard
                         </Link>
                         {user.role === 'customer' && (
-                          <Link
-                            to="/customer/profile"
-                            className="block px-4 py-2 text-slate-700 hover:bg-white/20 transition-colors duration-300"
-                            onClick={() => setShowUserMenu(false)}
-                          >
-                            Profile
-                          </Link>
+                          <>
+                            <Link
+                              to="/orders"
+                              className="block px-4 py-2 text-slate-700 hover:bg-white/20 transition-colors duration-300"
+                              onClick={() => setShowUserMenu(false)}
+                            >
+                              My Orders
+                            </Link>
+                            <Link
+                              to="/customer/profile"
+                              className="block px-4 py-2 text-slate-700 hover:bg-white/20 transition-colors duration-300"
+                              onClick={() => setShowUserMenu(false)}
+                            >
+                              Profile
+                            </Link>
+                          </>
                         )}
                         <button
                           onClick={handleLogout}
@@ -259,6 +268,13 @@ const Navbar = () => {
                         onClick={() => setIsOpen(false)}
                       >
                         Cart ({getTotalItems()})
+                      </Link>
+                      <Link
+                        to="/orders"
+                        className="block text-slate-700 hover:text-customer-primary transition-colors duration-300"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        My Orders
                       </Link>
                       <Link
                         to="/customer/profile"
