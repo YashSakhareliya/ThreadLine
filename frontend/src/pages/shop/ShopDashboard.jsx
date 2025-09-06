@@ -75,11 +75,24 @@ const ShopDashboard = () => {
   const [uploadingFabricImages, setUploadingFabricImages] = useState(false);
   const [selectedFabricImages, setSelectedFabricImages] = useState([]);
 
+  // Calculate shop rating as average of all fabric ratings
+  const calculateShopRating = () => {
+    if (shopFabrics.length === 0) return 'N/A';
+    const totalRating = shopFabrics.reduce((sum, fabric) => sum + (fabric.ratings || 0), 0);
+    const averageRating = totalRating / shopFabrics.length;
+    return averageRating > 0 ? averageRating.toFixed(1) : 'N/A';
+  };
+
+  // Calculate total reviews from all fabrics
+  const calculateTotalReviews = () => {
+    return shopFabrics.reduce((sum, fabric) => sum + (fabric.reviews?.length || 0), 0);
+  };
+
   const stats = [
     { label: 'Total Products', value: shopFabrics.length, icon: Package, color: 'text-blue-600' },
     { label: 'Orders Received', value: orders.length, icon: ShoppingBag, color: 'text-green-600' },
-    { label: 'Shop Rating', value: shop?.rating?.toFixed(1) || 'N/A', icon: Star, color: 'text-yellow-600' },
-    { label: 'Total Reviews', value: shop?.totalReviews || 0, icon: Users, color: 'text-purple-600' }
+    { label: 'Shop Rating', value: calculateShopRating(), icon: Star, color: 'text-yellow-600' },
+    { label: 'Total Reviews', value: calculateTotalReviews(), icon: Users, color: 'text-purple-600' }
   ];
 
   const handleAddFabric = async () => {
@@ -281,13 +294,25 @@ const ShopDashboard = () => {
   };
 
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
+    if (!shop?._id) {
+      setError('Shop information not available');
+      return;
+    }
+    
     try {
-      await orderService.updateOrderStatus(orderId, newStatus);
-      await fetchShopOrders(shop._id);
-      setError(null);
+      setUpdating(true);
+      const response = await orderService.updateOrderStatus(orderId, newStatus);
+      if (response.success) {
+        await fetchShopOrders(shop._id);
+        setError(null);
+      } else {
+        setError(response.message || 'Failed to update order status');
+      }
     } catch (err) {
       console.error('Error updating order status:', err);
-      setError('Failed to update order status. Please try again.');
+      setError(err.response?.data?.message || 'Failed to update order status. Please try again.');
+    } finally {
+      setUpdating(false);
     }
   };
 

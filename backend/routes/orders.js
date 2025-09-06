@@ -39,7 +39,7 @@ router.route('/:id')
   .get(protect, getOrder);
 
 router.route('/:id/status')
-  .put(protect, authorize('admin'), statusValidation, updateOrderStatus);
+  .put(protect, authorize('shop'), statusValidation, updateOrderStatus);
 
 router.route('/:id/cancel')
   .put(protect, cancelOrder);

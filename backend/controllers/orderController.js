@@ -224,7 +224,7 @@ export const updateOrderStatus = async (req, res) => {
     }
 
     // Only admin or shop owners can update order status
-    if (req.user.role !== 'admin' && req.user.role !== 'shop') {
+    if (req.user.role !== 'shop') {
       return res.status(401).json({
         success: false,
         message: 'Not authorized to update order status'
