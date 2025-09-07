@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Customer from '../models/Customer.js';
 import Shop from '../models/Shop.js';
 import Tailor from '../models/Tailor.js';
@@ -384,16 +385,17 @@ export const getDashboardStats = async (req, res) => {
       });
     }
 
-    // Get recent orders
-    const recentOrders = await Order.find({ customer: req.user.id })
+    // Get recent orders - using ObjectId conversion for proper matching
+    const userId = new mongoose.Types.ObjectId(req.user.id);
+    const recentOrders = await Order.find({ customer: userId })
       .sort({ createdAt: -1 })
       .limit(5)
       .populate('items.fabric', 'name image price');
 
     // Calculate stats
-    const totalOrders = await Order.countDocuments({ customer: req.user.id });
+    const totalOrders = await Order.countDocuments({ customer: userId });
     const totalSpent = await Order.aggregate([
-      { $match: { customer: req.user.id, paymentStatus: 'Paid' } },
+      { $match: { customer: userId, paymentStatus: 'Paid' } },
       { $group: { _id: null, total: { $sum: '$total' } } }
     ]);
 
@@ -402,7 +404,7 @@ export const getDashboardStats = async (req, res) => {
       favoriteShops: customer.favoriteShops.length,
       favoriteTailors: customer.favoriteTailors.length,
       totalSpent: totalSpent[0]?.total || 0,
-      loyaltyPoints: customer.loyaltyPoints
+      loyaltyPoints: customer.loyaltyPoints || 0
     };
 
     res.json({

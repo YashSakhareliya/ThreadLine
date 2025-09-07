@@ -24,7 +24,7 @@ import tailorService from '../../services/tailorService';
 import orderService from '../../services/orderService';
 
 const CustomerDashboard = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
   const { orders } = useSelector((state) => state.orders);
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
@@ -38,7 +38,8 @@ const CustomerDashboard = () => {
   // Fetch customer data and dashboard stats
   useEffect(() => {
     const fetchDashboardData = async () => {
-      if (!user?._id) return;
+      // Wait for auth to complete and ensure user is authenticated
+      if (authLoading || !isAuthenticated || !user) return;
       
       try {
         setLoading(true);
@@ -72,10 +73,8 @@ const CustomerDashboard = () => {
       }
     };
 
-    if (user) {
-      fetchDashboardData();
-    }
-  }, [user]);
+    fetchDashboardData();
+  }, [user, isAuthenticated, authLoading]);
 
   const recentShops = allShops.slice(0, 3);
   const featuredTailors = allTailors.slice(0, 2);

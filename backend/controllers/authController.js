@@ -25,7 +25,7 @@ export const register = async (req, res) => {
     const { name, email, password, role, phone, address } = req.body;
 
     // Check if user exists
-    const userExists = await User.findOne({ email, role });
+    const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({
         success: false,
@@ -177,7 +177,8 @@ export const login = async (req, res) => {
       success: true,
       message: 'Login successful',
       data: {
-        user: user.toJSON()
+        user: user.toJSON(),
+        token: generateToken(user._id),
       }
     });
   } catch (error) {
