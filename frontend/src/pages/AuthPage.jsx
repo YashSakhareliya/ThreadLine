@@ -4,9 +4,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, User, Scissors, Store, Mail, Lock, MapPin, Phone } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { cities } from '../data/mockData';
+import ForgotPassword from '../components/auth/ForgotPassword';
 
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState('customer');
   const [loading, setLoading] = useState(false);
@@ -68,6 +70,10 @@ const AuthPage = () => {
     const role = roles.find(r => r.id === roleId);
     return role ? role.color : 'from-customer-primary to-customer-secondary';
   };
+
+  if (showForgotPassword) {
+    return <ForgotPassword onBackToLogin={() => setShowForgotPassword(false)} />;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -160,6 +166,18 @@ const AuthPage = () => {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              {/* Forgot Password Link - Only show for login */}
+              {isLogin && (
+                <div className="text-right">
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(true)}
+                    className="text-sm text-blue-600 hover:text-blue-500 transition-colors duration-300"
+                  >
+                    Forgot your password?
+                  </button>
+                </div>
+              )}
             </div>
 
             <AnimatePresence>

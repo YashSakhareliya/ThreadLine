@@ -24,6 +24,7 @@ import CustomerDashboard from './pages/customer/CustomerDashboard';
 import CustomerProfile from './pages/customer/CustomerProfile';
 import TailorDashboard from './pages/tailor/TailorDashboard';
 import ShopDashboard from './pages/shop/ShopDashboard';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import NotFoundPage from './pages/NotFoundPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 
@@ -42,6 +43,7 @@ function App() {
                 {/* Public Routes */}
                 <Route path="/" element={<HomePage />} />
                 <Route path="/auth" element={<AuthPage />} />
+                <Route path="/reset-password/:resetToken" element={<ResetPasswordPage />} />
                 <Route path="/unauthorized" element={<UnauthorizedPage />} />
                 
                 {/* Customer Routes */}

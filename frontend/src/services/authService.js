@@ -28,9 +28,25 @@ const getCurrentUser = async () => {
   return response.data;
 };
 
+const forgotPassword = async (email) => {
+  const response = await api.post('/auth/forgot-password', { email });
+  return response.data;
+};
+
+const resetPassword = async (resetToken, password) => {
+  const response = await api.put(`/auth/reset-password/${resetToken}`, { password });
+  if (response.data.data && response.data.data.token) {
+    localStorage.setItem('token', response.data.data.token);
+    localStorage.setItem('user', JSON.stringify(response.data.data.user));
+  }
+  return response.data;
+};
+
 export default {
   login,
   register,
   logout,
-  getCurrentUser
+  getCurrentUser,
+  forgotPassword,
+  resetPassword
 };
