@@ -1,40 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Star, 
   Heart, 
   Share2, 
-  ShoppingCart, 
   Package, 
   Ruler, 
   Palette, 
   ChevronLeft, 
   ChevronRight,
   X,
-  Plus,
-  Minus,
   Truck,
   Shield,
   RotateCcw,
-  AlertCircle
+  AlertCircle,
+  Eye
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { addToCartAsync } from '../store/slices/cartSlice';
-import { useDispatch, useSelector } from 'react-redux';
 import fabricService from '../services/fabricService';
 import shopService from '../services/shopService';
 
 const FabricDetailsPage = () => {
   const { id } = useParams();
   const { user } = useAuth();
-  const dispatch = useDispatch();
-  const { loading } = useSelector(state => state.cart);
   const [fabric, setFabric] = useState(null);
   const [shop, setShop] = useState(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [showImageModal, setShowImageModal] = useState(false);
-  const [quantity, setQuantity] = useState(1);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [newReview, setNewReview] = useState({ rating: 5, comment: '', images: [] });
   const [isLiked, setIsLiked] = useState(false);
@@ -75,12 +68,6 @@ const FabricDetailsPage = () => {
 
     fetchFabricDetails();
   }, [id, user]);
-
-  const handleAddToCart = () => {
-    if (user && user.role === 'customer' && fabric) {
-      dispatch(addToCartAsync({ fabricId: fabric._id, quantity }));
-    }
-  };
 
   const handleSubmitReview = async () => {
     if (!newReview.comment.trim()) {
@@ -247,37 +234,18 @@ const FabricDetailsPage = () => {
 
               {user && user.role === 'customer' && (
                 <div className="space-y-4">
-                  <div className="flex items-center space-x-4">
-                    <span className="font-semibold text-slate-700">Quantity:</span>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors duration-300"
+                  {shop && (
+                    <Link to={`/shop/${shop._id}`}>
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="w-full flex items-center justify-center space-x-2 btn-primary"
                       >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <span className="w-12 text-center font-semibold">{quantity}</span>
-                      <button
-                        onClick={() => setQuantity(Math.min(fabric.stock, quantity + 1))}
-                        className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors duration-300"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handleAddToCart}
-                    disabled={fabric.stock === 0 || loading}
-                    className="w-full flex items-center justify-center space-x-2 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ShoppingCart className="w-5 h-5" />
-                    <span>
-                      {loading ? 'Adding...' : fabric.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
-                    </span>
-                  </motion.button>
+                        <Eye className="w-5 h-5" />
+                        <span>View Shop</span>
+                      </motion.button>
+                    </Link>
+                  )}
                 </div>
               )}
             </div>

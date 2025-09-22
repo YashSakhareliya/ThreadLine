@@ -8,14 +8,11 @@ import {
   Edit, 
   Save, 
   Plus,
-  Trash2,
-  Package
+  Trash2
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { cities } from '../../data/mockData';
-import OrderCard from '../../components/cards/OrderCard';
 import customerService from '../../services/customerService';
-import orderService from '../../services/orderService';
 
 const CustomerProfile = () => {
   const { user } = useAuth();
@@ -25,7 +22,6 @@ const CustomerProfile = () => {
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState(null);
   const [customerProfile, setCustomerProfile] = useState(null);
-  const [userOrders, setUserOrders] = useState([]);
   
   const [profileData, setProfileData] = useState({
     name: '',
@@ -45,17 +41,14 @@ const CustomerProfile = () => {
     phone: ''
   });
 
-  // Fetch customer profile and orders
+  // Fetch customer profile
   useEffect(() => {
     const fetchCustomerData = async () => {
       if (!user?._id) return;
       
       try {
         setLoading(true);
-        const [profileResponse, ordersResponse] = await Promise.all([
-          customerService.getCustomerProfile(),
-          orderService.getMyOrders()
-        ]);
+        const profileResponse = await customerService.getCustomerProfile();
 
         if (profileResponse.success) {
           const profile = profileResponse.data;
@@ -67,10 +60,6 @@ const CustomerProfile = () => {
             city: profile.city || ''
           });
           setAddresses(profile.addresses || []);
-        }
-
-        if (ordersResponse.success) {
-          setUserOrders(ordersResponse.data || []);
         }
 
         setError(null);
@@ -175,8 +164,7 @@ const CustomerProfile = () => {
 
   const tabs = [
     { id: 'profile', name: 'Profile Details', icon: User },
-    { id: 'addresses', name: 'Addresses', icon: MapPin },
-    { id: 'orders', name: 'Order History', icon: Package }
+    { id: 'addresses', name: 'Addresses', icon: MapPin }
   ];
 
   return (
@@ -442,24 +430,6 @@ const CustomerProfile = () => {
                   </motion.div>
                 ))}
               </div>
-            </div>
-          )}
-
-          {activeTab === 'orders' && (
-            <div>
-              <h2 className="text-2xl font-bold text-slate-800 mb-6">Order History</h2>
-              <div className="space-y-4">
-                {userOrders.map((order) => (
-                  <OrderCard key={order.id} order={order} />
-                ))}
-              </div>
-              {userOrders.length === 0 && (
-                <div className="text-center py-12">
-                  <Package className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-slate-600 mb-2">No orders yet</h3>
-                  <p className="text-slate-500">Your order history will appear here</p>
-                </div>
-              )}
             </div>
           )}
         </motion.div>

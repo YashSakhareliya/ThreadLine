@@ -95,10 +95,6 @@ const fabricSchema = new mongoose.Schema({
     min: 0,
     max: 5
   },
-  totalPurchases: {
-    type: Number,
-    default: 0
-  },
   likes: {
     type: Number,
     default: 0

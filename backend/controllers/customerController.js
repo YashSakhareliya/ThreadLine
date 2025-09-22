@@ -2,7 +2,6 @@ import mongoose from 'mongoose';
 import Customer from '../models/Customer.js';
 import Shop from '../models/Shop.js';
 import Tailor from '../models/Tailor.js';
-import Order from '../models/Order.js';
 import { validationResult } from 'express-validator';
 
 // @desc    Get customer profile by user ID
@@ -385,25 +384,9 @@ export const getDashboardStats = async (req, res) => {
       });
     }
 
-    // Get recent orders - using ObjectId conversion for proper matching
-    const userId = new mongoose.Types.ObjectId(req.user.id);
-    const recentOrders = await Order.find({ customer: userId })
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .populate('items.fabric', 'name image price');
-
-    // Calculate stats
-    const totalOrders = await Order.countDocuments({ customer: userId });
-    const totalSpent = await Order.aggregate([
-      { $match: { customer: userId, paymentStatus: 'Paid' } },
-      { $group: { _id: null, total: { $sum: '$total' } } }
-    ]);
-
     const stats = {
-      totalOrders,
       favoriteShops: customer.favoriteShops.length,
       favoriteTailors: customer.favoriteTailors.length,
-      totalSpent: totalSpent[0]?.total || 0,
       loyaltyPoints: customer.loyaltyPoints || 0
     };
 
@@ -411,8 +394,7 @@ export const getDashboardStats = async (req, res) => {
       success: true,
       data: {
         customer,
-        stats,
-        recentOrders
+        stats
       }
     });
   } catch (error) {

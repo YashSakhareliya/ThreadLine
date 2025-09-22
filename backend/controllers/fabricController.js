@@ -261,21 +261,6 @@ export const addFabricReview = async (req, res) => {
       });
     }
 
-    // Check if user has purchased this fabric
-    const Order = (await import('../models/Order.js')).default;
-    const hasPurchased = await Order.findOne({
-      customer: req.user.id,
-      'items.fabric': req.params.id,
-      status: 'Delivered'
-    });
-
-    if (!hasPurchased) {
-      return res.status(403).json({
-        success: false,
-        message: 'You can only review fabrics you have purchased and received'
-      });
-    }
-
     const review = {
       user: req.user.id,
       customerName: req.user.name,

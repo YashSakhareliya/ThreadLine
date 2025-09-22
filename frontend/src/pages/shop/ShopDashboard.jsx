@@ -24,7 +24,6 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import shopService from '../../services/shopService';
 import fabricService from '../../services/fabricService';
-import orderService from '../../services/orderService';
 import uploadService from '../../services/uploadService';
 
 const ShopDashboard = () => {
@@ -67,8 +66,6 @@ const ShopDashboard = () => {
     gstNumber: ''
   });
 
-  const [orders, setOrders] = useState([]);
-  const [ordersLoading, setOrdersLoading] = useState(false);
   const [fabricsLoading, setFabricsLoading] = useState(false);
   const [uploadingShopImage, setUploadingShopImage] = useState(false);
   const [uploadingFabricImage, setUploadingFabricImage] = useState(false);
@@ -90,7 +87,6 @@ const ShopDashboard = () => {
 
   const stats = [
     { label: 'Total Products', value: shopFabrics.length, icon: Package, color: 'text-blue-600' },
-    { label: 'Orders Received', value: orders.length, icon: ShoppingBag, color: 'text-green-600' },
     { label: 'Shop Rating', value: calculateShopRating(), icon: Star, color: 'text-yellow-600' },
     { label: 'Total Reviews', value: calculateTotalReviews(), icon: Users, color: 'text-purple-600' }
   ];
@@ -195,8 +191,7 @@ const ShopDashboard = () => {
   const tabs = [
     { id: 'overview', name: 'Overview', icon: TrendingUp },
     { id: 'shop-details', name: 'Shop Details', icon: Store },
-    { id: 'products', name: 'Manage Products', icon: Package },
-    { id: 'orders', name: 'Orders', icon: ShoppingBag }
+    { id: 'products', name: 'Manage Products', icon: Package }
   ];
 
   // Fetch shop data on component mount
@@ -231,10 +226,6 @@ const ShopDashboard = () => {
           // Fetch fabrics for this shop
           const fabricsResponse = await fabricService.getFabricsByShop(userShop._id);
           setShopFabrics(fabricsResponse.data.data || []);
-          
-          // Fetch orders for this shop
-          const ordersResponse = await orderService.getShopOrders(userShop._id);
-          setOrders(ordersResponse.data.data || []);
         } else {
           setError('No shop found for this user. Please create a shop first.');
         }
@@ -264,18 +255,6 @@ const ShopDashboard = () => {
     }
   };
 
-  const fetchShopOrders = async (shopId) => {
-    try {
-      setOrdersLoading(true);
-      const response = await orderService.getShopOrders(shopId);
-      setOrders(response.data.data || []);
-    } catch (err) {
-      console.error('Error fetching shop orders:', err);
-    } finally {
-      setOrdersLoading(false);
-    }
-  };
-
   const handleUpdateShopDetails = async () => {
     if (!shop?._id) return;
     
@@ -288,29 +267,6 @@ const ShopDashboard = () => {
     } catch (err) {
       console.error('Error updating shop:', err);
       setError('Failed to update shop details. Please try again.');
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const handleUpdateOrderStatus = async (orderId, newStatus) => {
-    if (!shop?._id) {
-      setError('Shop information not available');
-      return;
-    }
-    
-    try {
-      setUpdating(true);
-      const response = await orderService.updateOrderStatus(orderId, newStatus);
-      if (response.success) {
-        await fetchShopOrders(shop._id);
-        setError(null);
-      } else {
-        setError(response.message || 'Failed to update order status');
-      }
-    } catch (err) {
-      console.error('Error updating order status:', err);
-      setError(err.response?.data?.message || 'Failed to update order status. Please try again.');
     } finally {
       setUpdating(false);
     }
