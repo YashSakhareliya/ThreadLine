@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import fabricService from '../services/fabricService';
 import shopService from '../services/shopService';
+import tailorService from '../services/tailorService';
 
 const FabricDetailsPage = () => {
   const { id } = useParams();
@@ -35,6 +36,8 @@ const FabricDetailsPage = () => {
   const [reviewError, setReviewError] = useState('');
   const [canReview, setCanReview] = useState(false);
   const [hasReviewed, setHasReviewed] = useState(false);
+  const [nearestTailors, setNearestTailors] = useState([]);
+  const [tailorsLoading, setTailorsLoading] = useState(false);
 
   useEffect(() => {
     const fetchFabricDetails = async () => {
@@ -68,6 +71,33 @@ const FabricDetailsPage = () => {
 
     fetchFabricDetails();
   }, [id, user]);
+
+  // Fetch nearest tailors based on fabric properties
+  useEffect(() => {
+    const fetchNearestTailors = async () => {
+      if (!fabric) return;
+      
+      setTailorsLoading(true);
+      try {
+        const params = {
+          material: fabric.material,
+          category: fabric.category,
+          city: shop?.city || fabric.city,
+          limit: 6
+        };
+        
+        const response = await tailorService.getTailorsByFabric(params);
+        setNearestTailors(response.data.data || []);
+      } catch (error) {
+        console.error('Failed to fetch nearest tailors:', error);
+        setNearestTailors([]);
+      } finally {
+        setTailorsLoading(false);
+      }
+    };
+
+    fetchNearestTailors();
+  }, [fabric, shop]);
 
   const handleSubmitReview = async () => {
     if (!newReview.comment.trim()) {
@@ -307,6 +337,142 @@ const FabricDetailsPage = () => {
               </div>
             ))}
           </div>
+        </motion.div>
+
+        {/* Nearest Tailors */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="card mt-8"
+        >
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-800">Recommended Tailors</h2>
+              <p className="text-slate-600 mt-1">Expert tailors who specialize in working with {fabric.material} fabrics</p>
+            </div>
+            {tailorsLoading && (
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 border-2 border-customer-primary border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-sm text-slate-500">Finding tailors...</span>
+              </div>
+            )}
+          </div>
+
+          {nearestTailors.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {nearestTailors.map((tailor) => (
+                <motion.div
+                  key={tailor._id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  whileHover={{ y: -5 }}
+                  className="bg-white border border-slate-200 rounded-2xl p-6 hover:shadow-lg transition-all duration-300"
+                >
+                  <div className="flex items-center space-x-4 mb-4">
+                    <img
+                      src={tailor.image}
+                      alt={tailor.name}
+                      className="w-16 h-16 object-cover rounded-full border-2 border-customer-primary"
+                    />
+                    <div className="flex-1">
+                      <h3 className="font-bold text-slate-800 text-lg">{tailor.name}</h3>
+                      <p className="text-slate-600 text-sm">{tailor.city}</p>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <div className="flex items-center">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-4 h-4 ${
+                                i < Math.floor(tailor.rating) 
+                                  ? 'text-yellow-500 fill-current' 
+                                  : 'text-slate-300'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-sm text-slate-600">
+                          {tailor.rating > 0 ? tailor.rating.toFixed(1) : 'New'} 
+                          ({tailor.totalReviews} reviews)
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {tailor.specialization.slice(0, 3).map((spec, index) => (
+                        <span 
+                          key={index}
+                          className="px-2 py-1 bg-customer-primary/10 text-customer-primary text-xs rounded-full"
+                        >
+                          {spec}
+                        </span>
+                      ))}
+                      {tailor.specialization.length > 3 && (
+                        <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded-full">
+                          +{tailor.specialization.length - 3} more
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="flex justify-between items-center text-sm text-slate-600 mb-3">
+                      <span>Experience: {tailor.experience} years</span>
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        tailor.availability === 'Available' 
+                          ? 'bg-green-100 text-green-800' 
+                          : tailor.availability === 'Busy'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {tailor.availability}
+                      </span>
+                    </div>
+
+                    <p className="text-slate-600 text-sm line-clamp-2 mb-4">
+                      {tailor.bio}
+                    </p>
+                  </div>
+
+                  <div className="flex space-x-2">
+                    <Link 
+                      to={`/tailor/${tailor._id}`}
+                      className="flex-1 bg-customer-primary text-white py-2 px-4 rounded-lg text-center text-sm font-semibold hover:bg-customer-secondary transition-colors duration-300"
+                    >
+                      View Profile
+                    </Link>
+                    <button 
+                      className="flex-1 border border-customer-primary text-customer-primary py-2 px-4 rounded-lg text-sm font-semibold hover:bg-customer-primary hover:text-white transition-colors duration-300"
+                      onClick={() => {
+                        // You could add contact functionality here
+                        console.log('Contact tailor:', tailor._id);
+                      }}
+                    >
+                      Contact
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            !tailorsLoading && (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Eye className="w-8 h-8 text-slate-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-600 mb-2">No Tailors Found</h3>
+                <p className="text-slate-500">
+                  We couldn't find any tailors specializing in {fabric.material} fabrics in your area.
+                </p>
+                <Link 
+                  to="/tailors"
+                  className="inline-block mt-4 bg-customer-primary text-white py-2 px-6 rounded-lg font-semibold hover:bg-customer-secondary transition-colors duration-300"
+                >
+                  Browse All Tailors
+                </Link>
+              </div>
+            )
+          )}
         </motion.div>
 
         {/* Reviews */}

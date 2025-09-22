@@ -5,6 +5,11 @@ const getAllTailors = (params = {}) => {
   return api.get(`/tailors${queryString ? `?${queryString}` : ''}`);
 };
 
+const getTailorsByFabric = (params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return api.get(`/tailors/by-fabric${queryString ? `?${queryString}` : ''}`);
+};
+
 const getTailorById = (id) => {
   return api.get(`/tailors/${id}`);
 };
@@ -39,6 +44,7 @@ const replyToInquiry = (tailorId, inquiryId, replyData) => {
 
 export default {
   getAllTailors,
+  getTailorsByFabric,
   getTailorById,
   createTailor,
   updateTailor,
