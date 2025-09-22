@@ -163,14 +163,14 @@ const TailorPortfolioPage = () => {
                   </div>
                 </div>
                 
-                <div className="flex space-x-2">
+                {/* <div className="flex space-x-2">
                   <button className="p-2 glass rounded-lg hover:bg-white/30 transition-colors duration-300">
                     <Heart className="w-5 h-5 text-slate-600" />
                   </button>
                   <button className="p-2 glass rounded-lg hover:bg-white/30 transition-colors duration-300">
                     <Share2 className="w-5 h-5 text-slate-600" />
                   </button>
-                </div>
+                </div> */}
               </div>
 
               <p className="text-lg text-slate-600 leading-relaxed">

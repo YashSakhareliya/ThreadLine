@@ -145,14 +145,14 @@ const OrdersPage = () => {
                 {selectedOrder.items.map((item, index) => (
                   <div key={index} className="flex space-x-4 p-4 bg-slate-50 rounded-lg">
                     <img
-                      src={item.fabric.image}
-                      alt={item.fabric.name}
+                      src={item.fabric?.image}
+                      alt={item.fabric?.name}
                       className="w-16 h-16 object-cover rounded-lg"
                     />
                     <div className="flex-1">
-                      <h4 className="font-semibold text-slate-800">{item.fabric.name}</h4>
+                      <h4 className="font-semibold text-slate-800">{item.fabric?.name}</h4>
                       <p className="text-slate-600 text-sm">
-                        {item.fabric.shop?.name} • {item.fabric.shop?.city}
+                        {item.fabric?.shop?.name} • {item.fabric?.shop?.city}
                       </p>
                       <p className="text-slate-600 text-sm">Quantity: {item.quantity}</p>
                     </div>
@@ -349,8 +349,8 @@ const OrdersPage = () => {
                       {order.items.slice(0, 3).map((item, index) => (
                         <img
                           key={index}
-                          src={item.fabric.image}
-                          alt={item.fabric.name}
+                          src={item.fabric?.image }
+                          alt={item.fabric?.name}
                           className="w-12 h-12 object-cover rounded-lg"
                         />
                       ))}

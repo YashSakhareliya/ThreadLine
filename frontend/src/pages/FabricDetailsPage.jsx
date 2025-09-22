@@ -144,7 +144,7 @@ const FabricDetailsPage = () => {
                 className="w-full h-96 object-cover rounded-2xl cursor-pointer"
                 onClick={() => setShowImageModal(true)}
               />
-              <div className="absolute top-4 right-4 flex space-x-2">
+              {/* <div className="absolute top-4 right-4 flex space-x-2">
                 <button
                   onClick={() => setIsLiked(!isLiked)}
                   className={`p-2 glass rounded-lg transition-colors duration-300 ${
@@ -156,7 +156,7 @@ const FabricDetailsPage = () => {
                 <button className="p-2 glass rounded-lg text-slate-600 hover:text-customer-primary transition-colors duration-300">
                   <Share2 className="w-5 h-5" />
                 </button>
-              </div>
+              </div> */}
             </div>
             
             {fabric.images && fabric.images.length > 1 && (
@@ -194,14 +194,14 @@ const FabricDetailsPage = () => {
                   <span className="font-semibold">{fabric.ratings}</span>
                   <span className="text-slate-500">({fabric.reviews?.length || 0} reviews)</span>
                 </div>
-                <div className="flex items-center space-x-2 text-slate-600">
+                {/* <div className="flex items-center space-x-2 text-slate-600">
                   <Heart className="w-4 h-4" />
                   <span>{fabric.likes} likes</span>
                 </div>
                 <div className="flex items-center space-x-2 text-slate-600">
                   <Package className="w-4 h-4" />
                   <span>{fabric.totalPurchases} sold</span>
-                </div>
+                </div> */}
               </div>
               <p className="text-slate-600 leading-relaxed">{fabric.description}</p>
             </div>
