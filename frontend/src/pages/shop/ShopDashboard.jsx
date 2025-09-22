@@ -179,15 +179,6 @@ const ShopDashboard = () => {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status.toLowerCase()) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'shipped': return 'bg-blue-100 text-blue-800';
-      case 'delivered': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   const tabs = [
     { id: 'overview', name: 'Overview', icon: TrendingUp },
     { id: 'shop-details', name: 'Shop Details', icon: Store },
@@ -400,7 +391,7 @@ const ShopDashboard = () => {
             Shop Dashboard
           </h1>
           <p className="text-slate-600">
-            Manage your shop details, fabric inventory, track orders, and grow your business
+            Manage your shop details, fabric inventory, and grow your business
           </p>
           {error && (
             <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center space-x-3">
@@ -473,30 +464,21 @@ const ShopDashboard = () => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="card">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold text-slate-800">Recent Orders</h3>
-                    {ordersLoading && <Loader className="w-4 h-4 animate-spin text-shop-primary" />}
+                    <h3 className="text-xl font-bold text-slate-800">Recent Activity</h3>
                   </div>
                   <div className="space-y-3">
-                    {orders.slice(0, 3).map((order) => (
-                      <div key={order._id} className="p-3 bg-slate-50 rounded-lg">
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-semibold text-slate-800">{order.customer}</h4>
-                          <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(order.status)}`}>
-                            {order.status}
-                          </span>
-                        </div>
-                        <p className="text-sm text-slate-600 mb-2">
-                          {order.items?.length || 0} item(s)
-                        </p>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-slate-500">{new Date(order.createdAt).toLocaleDateString()}</span>
-                          <span className="font-semibold text-slate-800">₹{order.total}</span>
-                        </div>
+                    <div className="p-3 bg-slate-50 rounded-lg">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-semibold text-slate-800">Shop Activity</h4>
                       </div>
-                    ))}
-                    {orders.length === 0 && !ordersLoading && (
-                      <p className="text-slate-500 text-center py-4">No orders yet</p>
-                    )}
+                      <p className="text-sm text-slate-600 mb-2">
+                        Manage your fabric inventory and shop details
+                      </p>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">Total Products: {shopFabrics.length}</span>
+                        <span className="font-semibold text-slate-800">Active</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -1140,81 +1122,6 @@ const ShopDashboard = () => {
                   <p className="text-slate-500">Add your first fabric to get started!</p>
                 </div>
               )}
-            </div>
-          )}
-
-          {activeTab === 'orders' && (
-            <div className="card">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-slate-800">Order Management</h2>
-                {ordersLoading && <Loader className="w-4 h-4 animate-spin text-shop-primary" />}
-              </div>
-              
-              <div className="space-y-4">
-                {orders.map((order) => (
-                  <motion.div
-                    key={order._id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-4 border border-slate-200 rounded-xl hover:shadow-md transition-shadow duration-300"
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h3 className="font-bold text-slate-800">Order #{order._id.slice(-8)}</h3>
-                        <p className="text-slate-600">Customer: {order.customer}</p>
-                        <p className="text-sm text-slate-500">{new Date(order.createdAt).toLocaleDateString()}</p>
-                        {order.trackingNumber && (
-                          <p className="text-sm text-blue-600">Tracking: {order.trackingNumber}</p>
-                        )}
-                      </div>
-                      <span className={`px-3 py-1 text-sm rounded-full ${getStatusColor(order.status)}`}>
-                        {order.status}
-                      </span>
-                    </div>
-                    
-                    <div className="mb-4">
-                      <p className="text-sm text-slate-600">
-                        {order.items?.length || 0} item(s) • Total: ₹{order.total}
-                      </p>
-                      {order.shippingAddress && (
-                        <p className="text-sm text-slate-500 mt-1">
-                          Ship to: {order.shippingAddress.city}, {order.shippingAddress.state}
-                        </p>
-                      )}
-                    </div>
-                    
-                    <div className="flex justify-between items-center">
-                      <div className="text-lg font-bold text-slate-800">
-                        Total: ₹{order.total}
-                      </div>
-                      <div className="flex space-x-2">
-                        <select
-                          value={order.status}
-                          onChange={(e) => handleUpdateOrderStatus(order._id, e.target.value)}
-                          className="px-3 py-1 border border-slate-300 rounded-lg text-sm font-semibold bg-white hover:bg-slate-50 transition-colors duration-300"
-                        >
-                          <option value="Pending">Pending</option>
-                          <option value="Confirmed">Confirmed</option>
-                          <option value="Shipped">Shipped</option>
-                          <option value="Delivered">Delivered</option>
-                          <option value="Cancelled">Cancelled</option>
-                        </select>
-                        <button className="px-3 py-1 border border-slate-300 text-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors duration-300">
-                          View Details
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-                
-                {orders.length === 0 && !ordersLoading && (
-                  <div className="text-center py-12">
-                    <ShoppingBag className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold text-slate-600 mb-2">No orders yet</h3>
-                    <p className="text-slate-500">Orders will appear here when customers purchase your fabrics.</p>
-                  </div>
-                )}
-              </div>
             </div>
           )}
         </motion.div>
