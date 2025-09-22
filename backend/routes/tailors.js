@@ -6,7 +6,8 @@ import {
   createTailor,
   updateTailor,
   deleteTailor,
-  addTailorReview
+  addTailorReview,
+  getTailorsByFabric
 } from '../controllers/tailorController.js';
 import {
   sendInquiry,
@@ -49,6 +50,9 @@ const replyValidation = [
 router.route('/')
   .get(optionalAuth, getAllTailors)
   .post(protect, authorize('tailor'), tailorValidation, createTailor);
+
+router.route('/by-fabric')
+  .get(optionalAuth, getTailorsByFabric);
 
 router.route('/:id')
   .get(optionalAuth, getTailor)

@@ -272,3 +272,109 @@ export const addTailorReview = async (req, res) => {
     });
   }
 };
+
+// @desc    Get tailors suitable for specific fabric
+// @route   GET /api/v1/tailors/by-fabric
+// @access  Public
+export const getTailorsByFabric = async (req, res) => {
+  try {
+    const { 
+      fabricType, 
+      material, 
+      category, 
+      city, 
+      limit = 6 
+    } = req.query;
+
+    if (!fabricType && !material && !category) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide fabric type, material, or category'
+      });
+    }
+
+    // Build query to find relevant tailors
+    let query = { isActive: true };
+    
+    // Match tailors based on specialization that would work with the fabric
+    const fabricSpecializationMap = {
+      // Traditional fabrics
+      'silk': ['Traditional Wear', 'Sarees', 'Lehengas', 'Blouses', 'Formal Wear'],
+      'cotton': ['Casual Wear', 'Shirts', 'Traditional Wear', 'Sarees', 'Blouses'],
+      'linen': ['Casual Wear', 'Shirts', 'Formal Wear'],
+      'chiffon': ['Sarees', 'Lehengas', 'Blouses', 'Traditional Wear'],
+      'georgette': ['Sarees', 'Lehengas', 'Blouses', 'Traditional Wear'],
+      'velvet': ['Traditional Wear', 'Lehengas', 'Formal Wear'],
+      'satin': ['Formal Wear', 'Traditional Wear', 'Lehengas', 'Blouses'],
+      'crepe': ['Formal Wear', 'Casual Wear', 'Traditional Wear'],
+      'wool': ['Suits', 'Formal Wear', 'Traditional Wear'],
+      'polyester': ['Casual Wear', 'Formal Wear', 'Shirts'],
+      'denim': ['Casual Wear', 'Alterations'],
+      'khadi': ['Traditional Wear', 'Casual Wear'],
+      
+      // Fabric categories
+      'traditional': ['Traditional Wear', 'Sarees', 'Lehengas', 'Blouses'],
+      'formal': ['Suits', 'Formal Wear', 'Shirts'],
+      'casual': ['Casual Wear', 'Shirts', 'Alterations'],
+      'ethnic': ['Traditional Wear', 'Sarees', 'Lehengas', 'Blouses'],
+      'western': ['Suits', 'Formal Wear', 'Casual Wear', 'Shirts']
+    };
+
+    let specializationFilter = [];
+    
+    // Check material-based specialization
+    if (material) {
+      const materialLower = material.toLowerCase();
+      if (fabricSpecializationMap[materialLower]) {
+        specializationFilter = [...specializationFilter, ...fabricSpecializationMap[materialLower]];
+      }
+    }
+    
+    // Check fabric type-based specialization
+    if (fabricType) {
+      const typeLower = fabricType.toLowerCase();
+      if (fabricSpecializationMap[typeLower]) {
+        specializationFilter = [...specializationFilter, ...fabricSpecializationMap[typeLower]];
+      }
+    }
+    
+    // Check category-based specialization
+    if (category) {
+      const categoryLower = category.toLowerCase();
+      if (fabricSpecializationMap[categoryLower]) {
+        specializationFilter = [...specializationFilter, ...fabricSpecializationMap[categoryLower]];
+      }
+    }
+    
+    // Remove duplicates
+    specializationFilter = [...new Set(specializationFilter)];
+    
+    if (specializationFilter.length > 0) {
+      query.specialization = { $in: specializationFilter };
+    }
+    
+    // Filter by city if provided
+    if (city) {
+      query.city = { $regex: city, $options: 'i' };
+    }
+
+    // Find matching tailors, prioritize by rating and reviews
+    const tailors = await Tailor.find(query)
+      .populate('owner', 'name email')
+      .sort({ rating: -1, totalReviews: -1 })
+      .limit(parseInt(limit));
+
+    res.json({
+      success: true,
+      count: tailors.length,
+      data: tailors
+    });
+
+  } catch (error) {
+    console.error('Error getting tailors by fabric:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};
