@@ -1,18 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ShoppingBag,
   Scissors,
-  MapPin,
-  Star,
-  Package,
-  TrendingUp,
-  Heart,
-  Clock,
-  Calendar,
 } from 'lucide-react';
-import SearchBar from '../../components/common/SearchBar';
 import ShopCard from '../../components/cards/ShopCard';
 import TailorCard from '../../components/cards/TailorCard';
 import { useAuth } from '../../contexts/AuthContext';
@@ -22,11 +13,10 @@ import tailorService from '../../services/tailorService';
 
 const CustomerDashboard = () => {
   const { user, loading: authLoading, isAuthenticated } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('shops');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [customerData, setCustomerData] = useState(null);
-  const [dashboardStats, setDashboardStats] = useState(null);
   const [allShops, setAllShops] = useState([]);
   const [allTailors, setAllTailors] = useState([]);
 
@@ -39,18 +29,16 @@ const CustomerDashboard = () => {
       try {
         setLoading(true);
         
-        // Fetch dashboard stats (includes customer profile and stats)
-        const dashboardResponse = await customerService.getDashboardStats();
-        if (dashboardResponse.success) {
-          setCustomerData(dashboardResponse.data.customer);
-          setDashboardStats(dashboardResponse.data.stats);
-        }
-
-        // Fetch shops and tailors for browse tabs
-        const [shopsResponse, tailorsResponse] = await Promise.all([
+        // Fetch customer data and shops/tailors
+        const [dashboardResponse, shopsResponse, tailorsResponse] = await Promise.all([
+          customerService.getDashboardStats(),
           shopService.getAllShops(),
           tailorService.getAllTailors()
         ]);
+
+        if (dashboardResponse.success) {
+          setCustomerData(dashboardResponse.data.customer);
+        }
 
         if (shopsResponse.success) {
           setAllShops(shopsResponse.data);
@@ -70,35 +58,6 @@ const CustomerDashboard = () => {
     fetchDashboardData();
   }, [user, isAuthenticated, authLoading]);
 
-  const recentShops = allShops.slice(0, 3);
-  const featuredTailors = allTailors.slice(0, 2);
-
-  const stats = [
-    { 
-      label: 'Favorite Shops', 
-      value: dashboardStats?.favoriteShops || 0, 
-      icon: Heart, 
-      color: 'text-red-600' 
-    },
-    {
-      label: 'Favorite Tailors',
-      value: dashboardStats?.favoriteTailors || 0,
-      icon: Scissors,
-      color: 'text-green-600',
-    },
-    { 
-      label: 'Total Spent', 
-      value: `₹${dashboardStats?.totalSpent?.toLocaleString() || 0}`, 
-      icon: Star, 
-      color: 'text-yellow-600' 
-    },
-  ];
-
-  const handleSearch = ({ query, city }) => {
-    console.log('Search:', { query, city });
-    // Navigate to search results
-  };
-
   const handleToggleFavoriteShop = async (shopId) => {
     try {
       if (customerData?.favoriteShops?.includes(shopId)) {
@@ -110,7 +69,6 @@ const CustomerDashboard = () => {
       const response = await customerService.getDashboardStats();
       if (response.success) {
         setCustomerData(response.data.customer);
-        setDashboardStats(response.data.stats);
       }
     } catch (error) {
       console.error('Error toggling favorite shop:', error);
@@ -128,7 +86,6 @@ const CustomerDashboard = () => {
       const response = await customerService.getDashboardStats();
       if (response.success) {
         setCustomerData(response.data.customer);
-        setDashboardStats(response.data.stats);
       }
     } catch (error) {
       console.error('Error toggling favorite tailor:', error);
@@ -163,7 +120,6 @@ const CustomerDashboard = () => {
   }
 
   const tabs = [
-    { id: 'overview', name: 'Overview', icon: TrendingUp },
     { id: 'shops', name: 'Browse Shops', icon: ShoppingBag },
     { id: 'tailors', name: 'Find Tailors', icon: Scissors },
   ];
@@ -186,15 +142,6 @@ const CustomerDashboard = () => {
           </p>
         </motion.div>
 
-        {/* Search Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-8"
-        >
-          <SearchBar onSearch={handleSearch} />
-        </motion.div>
 
         {/* Tabs */}
         <motion.div
@@ -228,59 +175,6 @@ const CustomerDashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          {activeTab === 'overview' && (
-            <div className="space-y-8">
-              {/* Stats */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {stats.map((stat, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="card text-center"
-                  >
-                    <div
-                      className={`w-12 h-12 mx-auto mb-3 rounded-xl bg-slate-100 flex items-center justify-center ${stat.color}`}
-                    >
-                      <stat.icon className="w-6 h-6" />
-                    </div>
-                    <div className="text-2xl font-bold text-slate-800">
-                      {stat.value}
-                    </div>
-                    <div className="text-sm text-slate-600">{stat.label}</div>
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* Featured Shops */}
-              <div>
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold text-slate-800">
-                    Popular Shops
-                  </h2>
-                  <Link
-                    to="#"
-                    onClick={() => setActiveTab('shops')}
-                    className="text-customer-primary hover:text-customer-secondary"
-                  >
-                    View All
-                  </Link>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {recentShops.map((shop) => (
-                    <ShopCard 
-                      key={shop._id} 
-                      shop={shop} 
-                      isFavorite={customerData?.favoriteShops?.includes(shop._id)}
-                      onToggleFavorite={() => handleToggleFavoriteShop(shop._id)}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
           {activeTab === 'shops' && (
             <div>
               <div className="flex justify-between items-center mb-6">
