@@ -6,7 +6,6 @@ import { AuthProvider } from './contexts/AuthContext';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import ProtectedRoute from './components/common/ProtectedRoute';
-import useCustomerLocation from './hooks/useCustomerLocation';
 
 // Pages
 import HomePage from './pages/HomePage';
@@ -30,9 +29,6 @@ import './index.css';
 
 // Component to handle location tracking
 function AppContent() {
-  // Automatically track and update customer location
-  useCustomerLocation();
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <Navbar />

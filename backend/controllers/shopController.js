@@ -1,8 +1,7 @@
 import Shop from '../models/Shop.js';
 import Fabric from '../models/Fabric.js';
 import { validationResult } from 'express-validator';
-import { calculateDistanceToCity } from '../utils/geolocation.js';
-import { updateLocationData, findNearbyItems, extractCoordinates } from '../utils/locationUtils.js';
+import { updateLocationData, extractCoordinates } from '../utils/locationUtils.js';
 import { updateShopRating, recalculateAllShopRatings } from '../utils/shopUtils.js';
 
 // @desc    Get all shops
@@ -261,18 +260,16 @@ export const getShopFabrics = async (req, res) => {
   }
 };
 
-// @desc    Get shops with distance calculation
+// @desc    Get nearby shops (distance calculation removed)
 // @route   GET /api/v1/shops/nearby
 // @access  Public
 export const getNearbyShops = async (req, res) => {
   try {
     const { 
-      userLat, 
-      userLon, 
       city, 
       search, 
       minRating,
-      sortBy = 'distance', 
+      sortBy = 'rating', 
       page = 1, 
       limit = 10 
     } = req.query;
@@ -298,34 +295,13 @@ export const getNearbyShops = async (req, res) => {
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
-    // Add distance calculation if user location provided
-    if (userLat && userLon) {
-      shops = findNearbyItems(shops, parseFloat(userLat), parseFloat(userLon));
-      
-      // If sortBy is not distance, re-sort as needed
-      if (sortBy !== 'distance') {
-        shops.sort((a, b) => {
-          if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        });
-      }
+    // Sort shops
+    shops = shops.map(shop => shop.toObject());
+    
+    if (sortBy === 'rating') {
+      shops.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     } else {
-      // Convert to plain objects for consistency
-      shops = shops.map(shop => {
-        const shopObj = shop.toObject();
-        return {
-          ...shopObj,
-          distance: null,
-          distanceText: 'Distance unavailable'
-        };
-      });
-      
-      // Sort by other criteria if not distance
-      if (sortBy === 'rating') {
-        shops.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-      } else {
-        shops.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      }
+      shops.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
 
     const total = await Shop.countDocuments(query);
@@ -334,8 +310,7 @@ export const getNearbyShops = async (req, res) => {
       success: true,
       count: shops.length,
       total,
-      data: shops,
-      userLocation: userLat && userLon ? { lat: userLat, lon: userLon } : null
+      data: shops
     });
 
   } catch (error) {

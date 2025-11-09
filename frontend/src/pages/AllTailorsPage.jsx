@@ -5,9 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setFilters, clearFilters, setInitialTailors } from '../store/slices/tailorsSlice';
 import SearchBar from '../components/common/SearchBar';
 import tailorService from '../services/tailorService';
-import customerService from '../services/customerService';
 import { useNavigate } from 'react-router-dom';
-import { requestUserLocation } from '../utils/geolocation';
 
 const AllTailorsPage = () => {
   const dispatch = useDispatch();
@@ -26,50 +24,8 @@ const AllTailorsPage = () => {
       try {
         setLoading(true);
         
-        let apiParams = {};
-        
-        // First, try to get saved customer location from profile
-        if (isAuthenticated && user?.role === 'customer') {
-          try {
-            const profileResponse = await customerService.getCustomerProfile();
-            const customer = profileResponse.data;
-            
-            if (customer.latitude && customer.longitude) {
-              apiParams = {
-                userLat: customer.latitude,
-                userLon: customer.longitude
-              };
-              console.log('Using saved customer location:', apiParams);
-            }
-          } catch (err) {
-            console.log('Could not fetch customer profile:', err);
-          }
-        }
-        
-        // If no saved location, try to get current browser location
-        if (!apiParams.userLat) {
-          const locationResult = await requestUserLocation();
-          
-          if (locationResult.success) {
-            apiParams = {
-              userLat: locationResult.data.lat,
-              userLon: locationResult.data.lon
-            };
-            console.log('Using current browser location:', apiParams);
-          } else {
-            console.log('Location not available:', locationResult.error);
-          }
-        }
-        
-        // Add pagination parameters to get all tailors
-        if (apiParams.userLat) {
-          apiParams.limit = 100; // Get more tailors
-        }
-        
-        // Use getNearbyTailors for distance calculation, or getAllTailors as fallback
-        const res = apiParams.userLat 
-          ? await tailorService.getNearbyTailors(apiParams)
-          : await tailorService.getAllTailors();
+        // Fetch all tailors
+        const res = await tailorService.getAllTailors();
         
         const tailors = res.data.data;
         console.log('Tailors received:', tailors.length);

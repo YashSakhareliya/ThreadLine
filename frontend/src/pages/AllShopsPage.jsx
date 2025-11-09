@@ -5,8 +5,6 @@ import { useSelector } from 'react-redux';
 import ShopCard from '../components/cards/ShopCard';
 import SearchBar from '../components/common/SearchBar';
 import shopService from '../services/shopService';
-import customerService from '../services/customerService';
-import { requestUserLocation } from '../utils/geolocation';
 
 const AllShopsPage = () => {
   const [shops, setShops] = useState([]);
@@ -19,7 +17,7 @@ const AllShopsPage = () => {
   const [filters, setFilters] = useState({
     city: '',
     rating: '',
-    sortBy: 'distance'
+    sortBy: 'rating'
   });
   const { user, isAuthenticated } = useSelector(state => state.auth);
 
@@ -28,50 +26,8 @@ const AllShopsPage = () => {
       try {
         setLoading(true);
         
-        let apiParams = {};
-        
-        // First, try to get saved customer location from profile
-        if (isAuthenticated && user?.role === 'customer') {
-          try {
-            const profileResponse = await customerService.getCustomerProfile();
-            const customer = profileResponse.data;
-            
-            if (customer.latitude && customer.longitude) {
-              apiParams = {
-                userLat: customer.latitude,
-                userLon: customer.longitude
-              };
-              console.log('Using saved customer location:', apiParams);
-            }
-          } catch (err) {
-            console.log('Could not fetch customer profile:', err);
-          }
-        }
-        
-        // If no saved location, try to get current browser location
-        if (!apiParams.userLat) {
-          const locationResult = await requestUserLocation();
-          
-          if (locationResult.success) {
-            apiParams = {
-              userLat: locationResult.data.lat,
-              userLon: locationResult.data.lon
-            };
-            console.log('Using current browser location:', apiParams);
-          } else {
-            console.log('Location not available:', locationResult.error);
-          }
-        }
-        
-        // Add pagination parameters to get all shops
-        if (apiParams.userLat) {
-          apiParams.limit = 100; // Get more shops
-        }
-        
-        // Use getNearbyShops for distance calculation, or getAllShops as fallback
-        const response = apiParams.userLat 
-          ? await shopService.getNearbyShops(apiParams)
-          : await shopService.getAllShops();
+        // Fetch all shops
+        const response = await shopService.getAllShops();
         
         console.log('Shops received:', response.data.data.length);
         console.log('Sample shop data:', response.data.data[0]);
@@ -105,11 +61,6 @@ const AllShopsPage = () => {
 
     filtered.sort((a, b) => {
       switch (filters.sortBy) {
-        case 'distance':
-          // Sort by distance (null values go to end)
-          if (a.distance === null || a.distance === undefined) return 1;
-          if (b.distance === null || b.distance === undefined) return -1;
-          return a.distance - b.distance;
         case 'rating':
           return b.rating - a.rating;
         case 'name':
@@ -117,7 +68,7 @@ const AllShopsPage = () => {
         case 'city':
           return a.city.localeCompare(b.city);
         default:
-          return 0;
+          return b.rating - a.rating;
       }
     });
 
@@ -276,9 +227,8 @@ const AllShopsPage = () => {
                   onChange={(e) => handleFilterChange('sortBy', e.target.value)}
                   className="input-field"
                 >
-                  <option value="distance">Distance (Nearest First)</option>
-                  <option value="name">Name</option>
                   <option value="rating">Rating</option>
+                  <option value="name">Name</option>
                   <option value="city">City</option>
                 </select>
               </div>

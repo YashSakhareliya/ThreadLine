@@ -1,8 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Star, MapPin, Phone, Calendar, Navigation } from 'lucide-react';
-import { formatDistance } from '../../utils/geolocation';
+import { Star, MapPin, Phone, Calendar } from 'lucide-react';
 
 const ShopCard = ({ shop }) => {
   return (
@@ -40,15 +39,6 @@ const ShopCard = ({ shop }) => {
             <MapPin className="w-4 h-4 text-customer-primary" />
             <span className="text-sm">{shop.city}</span>
           </div>
-          
-          {(shop.distance !== undefined && shop.distance !== null) && (
-            <div className="flex items-center space-x-2 text-slate-600">
-              <Navigation className="w-4 h-4 text-customer-primary" />
-              <span className="text-sm font-medium text-customer-primary">
-                {shop.distanceText || formatDistance(shop.distance)}
-              </span>
-            </div>
-          )}
           
           <div className="flex items-center space-x-2 text-slate-600">
             <Phone className="w-4 h-4 text-customer-primary" />

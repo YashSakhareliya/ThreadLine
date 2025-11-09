@@ -9,8 +9,7 @@ import {
   removeFavoriteShop,
   addFavoriteTailor,
   removeFavoriteTailor,
-  getDashboardStats,
-  updateCustomerLocation
+  getDashboardStats
 } from '../controllers/customerController.js';
 import { protect } from '../middleware/auth.js';
 import { body } from 'express-validator';
@@ -49,11 +48,5 @@ router.delete('/favorites/tailors/:tailorId', removeFavoriteTailor);
 
 // Dashboard route
 router.get('/dashboard', getDashboardStats);
-
-// Location update route
-router.put('/location', [
-  body('latitude').isFloat({ min: -90, max: 90 }).withMessage('Valid latitude is required'),
-  body('longitude').isFloat({ min: -180, max: 180 }).withMessage('Valid longitude is required')
-], updateCustomerLocation);
 
 export default router;

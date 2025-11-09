@@ -60,12 +60,6 @@ const getDashboardStats = async () => {
   return response.data;
 };
 
-// Update customer location
-const updateCustomerLocation = async (latitude, longitude) => {
-  const response = await api.put('/customers/location', { latitude, longitude });
-  return response.data;
-};
-
 export default {
   getCustomerProfile,
   updateCustomerProfile,
@@ -76,6 +70,5 @@ export default {
   removeFavoriteShop,
   addFavoriteTailor,
   removeFavoriteTailor,
-  getDashboardStats,
-  updateCustomerLocation
+  getDashboardStats
 };

@@ -1,7 +1,6 @@
 import Tailor from '../models/Tailor.js';
 import { validationResult } from 'express-validator';
-import { calculateDistanceToCity } from '../utils/geolocation.js';
-import { updateLocationData, findNearbyItems, extractCoordinates } from '../utils/locationUtils.js';
+import { updateLocationData, extractCoordinates } from '../utils/locationUtils.js';
 
 // @desc    Get all tailors
 // @route   GET /api/v1/tailors
@@ -379,26 +378,13 @@ export const getTailorsByFabric = async (req, res) => {
       .sort({ rating: -1, totalReviews: -1 })
       .limit(parseInt(limit));
 
-    // Add distance calculation if user location provided
-    if (userLat && userLon) {
-      tailors = findNearbyItems(tailors, parseFloat(userLat), parseFloat(userLon));
-    } else {
-      // Convert to plain objects for consistency
-      tailors = tailors.map(tailor => {
-        const tailorObj = tailor.toObject();
-        return {
-          ...tailorObj,
-          distance: null,
-          distanceText: 'Distance unavailable'
-        };
-      });
-    }
+    // Convert to plain objects for consistency
+    tailors = tailors.map(tailor => tailor.toObject());
 
     res.json({
       success: true,
       count: tailors.length,
-      data: tailors,
-      userLocation: userLat && userLon ? { lat: userLat, lon: userLon } : null
+      data: tailors
     });
 
   } catch (error) {
@@ -410,19 +396,17 @@ export const getTailorsByFabric = async (req, res) => {
   }
 };
 
-// @desc    Get tailors with distance calculation
+// @desc    Get nearby tailors (distance calculation removed)
 // @route   GET /api/v1/tailors/nearby
 // @access  Public
 export const getNearbyTailors = async (req, res) => {
   try {
     const { 
-      userLat, 
-      userLon, 
       city, 
       specialization, 
       minRating, 
       search, 
-      sortBy = 'distance', 
+      sortBy = 'rating', 
       page = 1, 
       limit = 10 
     } = req.query;
@@ -455,34 +439,13 @@ export const getNearbyTailors = async (req, res) => {
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
-    // Add distance calculation if user location provided
-    if (userLat && userLon) {
-      tailors = findNearbyItems(tailors, parseFloat(userLat), parseFloat(userLon));
-      
-      // If sortBy is not distance, re-sort as needed
-      if (sortBy !== 'distance') {
-        tailors.sort((a, b) => {
-          if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        });
-      }
+    // Convert to plain objects and sort
+    tailors = tailors.map(tailor => tailor.toObject());
+    
+    if (sortBy === 'rating') {
+      tailors.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     } else {
-      // Convert to plain objects for consistency
-      tailors = tailors.map(tailor => {
-        const tailorObj = tailor.toObject();
-        return {
-          ...tailorObj,
-          distance: null,
-          distanceText: 'Distance unavailable'
-        };
-      });
-      
-      // Sort by other criteria if not distance
-      if (sortBy === 'rating') {
-        tailors.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-      } else {
-        tailors.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      }
+      tailors.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
 
     const total = await Tailor.countDocuments(query);
@@ -491,8 +454,7 @@ export const getNearbyTailors = async (req, res) => {
       success: true,
       count: tailors.length,
       total,
-      data: tailors,
-      userLocation: userLat && userLon ? { lat: userLat, lon: userLon } : null
+      data: tailors
     });
 
   } catch (error) {
