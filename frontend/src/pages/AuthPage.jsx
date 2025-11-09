@@ -33,6 +33,7 @@ const AuthPage = () => {
   ];
 
   const handleInputChange = (e) => {
+    // console.log(formData);
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -45,6 +46,7 @@ const AuthPage = () => {
       if (isLogin) {
         user = await login(formData.email, formData.password, selectedRole);
       } else {
+        // console.log('Registering user with data:', { ...formData, role: selectedRole });
         user = await register({ ...formData, role: selectedRole });
       }
 
@@ -248,22 +250,6 @@ const AuthPage = () => {
                     </div>
                   </div>
 
-                  {/* Bio for Tailors */}
-                  {selectedRole === 'tailor' && (
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">
-                        Bio
-                      </label>
-                      <textarea
-                        name="bio"
-                        value={formData.bio}
-                        onChange={handleInputChange}
-                        rows={3}
-                        className="input-field resize-none"
-                        placeholder="Tell us about your experience and specialization"
-                      />
-                    </div>
-                  )}
                 </motion.div>
               )}
             </AnimatePresence>

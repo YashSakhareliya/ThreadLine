@@ -22,8 +22,13 @@ const getSearchSuggestions = (query) => {
   return api.get(`/search/suggestions?q=${encodeURIComponent(query)}`);
 };
 
+const getAllCities = () => {
+  return api.get('/search/cities');
+};
+
 export default {
   globalSearch,
   nearbySearch,
-  getSearchSuggestions
+  getSearchSuggestions,
+  getAllCities
 };

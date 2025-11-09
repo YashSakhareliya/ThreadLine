@@ -6,6 +6,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import ProtectedRoute from './components/common/ProtectedRoute';
+import useCustomerLocation from './hooks/useCustomerLocation';
 
 // Pages
 import HomePage from './pages/HomePage';
@@ -27,14 +28,15 @@ import UnauthorizedPage from './pages/UnauthorizedPage';
 // Import CSS
 import './index.css';
 
-function App() {
+// Component to handle location tracking
+function AppContent() {
+  // Automatically track and update customer location
+  useCustomerLocation();
+
   return (
-    <Provider store={store}>
-      <AuthProvider>
-        <Router>
-          <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-            <Navbar />
-            <Routes>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <Navbar />
+      <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<HomePage />} />
                 <Route path="/auth" element={<AuthPage />} />
@@ -132,7 +134,16 @@ function App() {
               </Routes>
               <Footer />
             </div>
-          </Router>
+  );
+}
+
+function App() {
+  return (
+    <Provider store={store}>
+      <AuthProvider>
+        <Router>
+          <AppContent />
+        </Router>
       </AuthProvider>
     </Provider>
   );

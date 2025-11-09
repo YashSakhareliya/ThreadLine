@@ -7,12 +7,14 @@ import {
   updateTailor,
   deleteTailor,
   addTailorReview,
-  getTailorsByFabric
+  getTailorsByFabric,
+  getNearbyTailors
 } from '../controllers/tailorController.js';
 import {
   sendInquiry,
   getTailorInquiries,
-  replyToInquiry
+  markInquiryAsRead,
+  closeInquiry
 } from '../controllers/inquiryController.js';
 import { protect, authorize, optionalAuth, checkOwnership } from '../middleware/auth.js';
 import Tailor from '../models/Tailor.js';
@@ -26,10 +28,13 @@ const tailorValidation = [
   body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
   body('phone').matches(/^\+?[1-9]\d{1,14}$/).withMessage('Please provide a valid phone number'),
   body('city').trim().notEmpty().withMessage('City is required'),
+  body('address').optional().trim().isLength({ max: 200 }).withMessage('Address cannot exceed 200 characters'),
   body('specialization').isArray({ min: 1 }).withMessage('At least one specialization is required'),
   body('specialization.*').isIn(['Suits', 'Shirts', 'Traditional Wear', 'Sarees', 'Lehengas', 'Blouses', 'Casual Wear', 'Formal Wear', 'Alterations']).withMessage('Invalid specialization'),
   body('experience').isInt({ min: 0 }).withMessage('Experience must be a non-negative number'),
-  body('priceRange').trim().notEmpty().withMessage('Price range is required')
+  body('priceRange').trim().notEmpty().withMessage('Price range is required'),
+  body('latitude').optional().isFloat({ min: -90, max: 90 }).withMessage('Latitude must be between -90 and 90'),
+  body('longitude').optional().isFloat({ min: -180, max: 180 }).withMessage('Longitude must be between -180 and 180')
 ];
 
 const reviewValidation = [
@@ -42,10 +47,6 @@ const inquiryValidation = [
   body('message').trim().isLength({ min: 1, max: 1000 }).withMessage('Message must be between 1 and 1000 characters')
 ];
 
-const replyValidation = [
-  body('message').trim().isLength({ min: 1, max: 1000 }).withMessage('Message must be between 1 and 1000 characters')
-];
-
 // Routes
 router.route('/')
   .get(optionalAuth, getAllTailors)
@@ -53,6 +54,9 @@ router.route('/')
 
 router.route('/by-fabric')
   .get(optionalAuth, getTailorsByFabric);
+
+router.route('/nearby')
+  .get(optionalAuth, getNearbyTailors);
 
 router.route('/:id')
   .get(optionalAuth, getTailor)
@@ -66,7 +70,10 @@ router.route('/:id/inquiries')
   .post(protect, authorize('customer'), inquiryValidation, sendInquiry)
   .get(protect, authorize('tailor'), getTailorInquiries);
 
-router.route('/:id/inquiries/:inquiryId/reply')
-  .post(protect, authorize('tailor'), replyValidation, replyToInquiry);
+router.route('/:id/inquiries/:inquiryId/read')
+  .patch(protect, authorize('tailor'), markInquiryAsRead);
+
+router.route('/:id/inquiries/:inquiryId/close')
+  .patch(protect, authorize('tailor'), closeInquiry);
 
 export default router;

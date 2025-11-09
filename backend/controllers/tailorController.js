@@ -1,5 +1,7 @@
 import Tailor from '../models/Tailor.js';
 import { validationResult } from 'express-validator';
+import { calculateDistanceToCity } from '../utils/geolocation.js';
+import { updateLocationData, findNearbyItems, extractCoordinates } from '../utils/locationUtils.js';
 
 // @desc    Get all tailors
 // @route   GET /api/v1/tailors
@@ -120,7 +122,11 @@ export const createTailor = async (req, res) => {
     // Add user to req.body
     req.body.owner = req.user.id;
 
-    const tailor = await Tailor.create(req.body);
+    // Process location data if provided
+    const tailorData = await updateLocationData(req.body);
+    // console.log('Creating tailor with data:', tailorData);
+
+    const tailor = await Tailor.create(tailorData);
 
     res.status(201).json({
       success: true,
@@ -158,7 +164,10 @@ export const updateTailor = async (req, res) => {
       });
     }
 
-    tailor = await Tailor.findByIdAndUpdate(req.params.id, req.body, {
+    // Process location data if provided
+    const updateData = await updateLocationData(req.body);
+    
+    tailor = await Tailor.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
       runValidators: true
     });
@@ -283,6 +292,8 @@ export const getTailorsByFabric = async (req, res) => {
       material, 
       category, 
       city, 
+      userLat,
+      userLon,
       limit = 6 
     } = req.query;
 
@@ -353,25 +364,139 @@ export const getTailorsByFabric = async (req, res) => {
       query.specialization = { $in: specializationFilter };
     }
     
-    // Filter by city if provided
+    // Filter by city if provided (check both main city and address.city)
     if (city) {
-      query.city = { $regex: city, $options: 'i' };
+      query.$or = [
+        ...query.$or || [],
+        { city: { $regex: city, $options: 'i' } },
+        { 'address.city': { $regex: city, $options: 'i' } }
+      ];
     }
 
-    // Find matching tailors, prioritize by rating and reviews
-    const tailors = await Tailor.find(query)
+    // Find matching tailors
+    let tailors = await Tailor.find(query)
       .populate('owner', 'name email')
       .sort({ rating: -1, totalReviews: -1 })
       .limit(parseInt(limit));
 
+    // Add distance calculation if user location provided
+    if (userLat && userLon) {
+      tailors = findNearbyItems(tailors, parseFloat(userLat), parseFloat(userLon));
+    } else {
+      // Convert to plain objects for consistency
+      tailors = tailors.map(tailor => {
+        const tailorObj = tailor.toObject();
+        return {
+          ...tailorObj,
+          distance: null,
+          distanceText: 'Distance unavailable'
+        };
+      });
+    }
+
     res.json({
       success: true,
       count: tailors.length,
-      data: tailors
+      data: tailors,
+      userLocation: userLat && userLon ? { lat: userLat, lon: userLon } : null
     });
 
   } catch (error) {
     console.error('Error getting tailors by fabric:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};
+
+// @desc    Get tailors with distance calculation
+// @route   GET /api/v1/tailors/nearby
+// @access  Public
+export const getNearbyTailors = async (req, res) => {
+  try {
+    const { 
+      userLat, 
+      userLon, 
+      city, 
+      specialization, 
+      minRating, 
+      search, 
+      sortBy = 'distance', 
+      page = 1, 
+      limit = 10 
+    } = req.query;
+
+    // Build query
+    let query = { isActive: true };
+    
+    if (city) {
+      query.$or = [
+        { city: { $regex: city, $options: 'i' } },
+        { 'address.city': { $regex: city, $options: 'i' } }
+      ];
+    }
+    
+    if (specialization) {
+      query.specialization = { $in: [specialization] };
+    }
+    
+    if (minRating) {
+      query.rating = { $gte: parseFloat(minRating) };
+    }
+    
+    if (search) {
+      query.$text = { $search: search };
+    }
+
+    // Get tailors
+    let tailors = await Tailor.find(query)
+      .populate('owner', 'name email')
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    // Add distance calculation if user location provided
+    if (userLat && userLon) {
+      tailors = findNearbyItems(tailors, parseFloat(userLat), parseFloat(userLon));
+      
+      // If sortBy is not distance, re-sort as needed
+      if (sortBy !== 'distance') {
+        tailors.sort((a, b) => {
+          if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        });
+      }
+    } else {
+      // Convert to plain objects for consistency
+      tailors = tailors.map(tailor => {
+        const tailorObj = tailor.toObject();
+        return {
+          ...tailorObj,
+          distance: null,
+          distanceText: 'Distance unavailable'
+        };
+      });
+      
+      // Sort by other criteria if not distance
+      if (sortBy === 'rating') {
+        tailors.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      } else {
+        tailors.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      }
+    }
+
+    const total = await Tailor.countDocuments(query);
+
+    res.json({
+      success: true,
+      count: tailors.length,
+      total,
+      data: tailors,
+      userLocation: userLat && userLon ? { lat: userLat, lon: userLon } : null
+    });
+
+  } catch (error) {
+    console.error('Error getting nearby tailors:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'

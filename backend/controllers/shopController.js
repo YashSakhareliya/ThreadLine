@@ -1,6 +1,9 @@
 import Shop from '../models/Shop.js';
 import Fabric from '../models/Fabric.js';
 import { validationResult } from 'express-validator';
+import { calculateDistanceToCity } from '../utils/geolocation.js';
+import { updateLocationData, findNearbyItems, extractCoordinates } from '../utils/locationUtils.js';
+import { updateShopRating, recalculateAllShopRatings } from '../utils/shopUtils.js';
 
 // @desc    Get all shops
 // @route   GET /api/v1/shops
@@ -104,7 +107,10 @@ export const createShop = async (req, res) => {
     // Add user to req.body
     req.body.owner = req.user.id;
 
-    const shop = await Shop.create(req.body);
+    // Process location data if provided
+    const shopData = await updateLocationData(req.body);
+
+    const shop = await Shop.create(shopData);
 
     res.status(201).json({
       success: true,
@@ -142,7 +148,10 @@ export const updateShop = async (req, res) => {
       });
     }
 
-    shop = await Shop.findByIdAndUpdate(req.params.id, req.body, {
+    // Process location data if provided
+    const updateData = await updateLocationData(req.body);
+    
+    shop = await Shop.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
       runValidators: true
     });
@@ -248,6 +257,161 @@ export const getShopFabrics = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error'
+    });
+  }
+};
+
+// @desc    Get shops with distance calculation
+// @route   GET /api/v1/shops/nearby
+// @access  Public
+export const getNearbyShops = async (req, res) => {
+  try {
+    const { 
+      userLat, 
+      userLon, 
+      city, 
+      search, 
+      minRating,
+      sortBy = 'distance', 
+      page = 1, 
+      limit = 10 
+    } = req.query;
+
+    // Build query
+    let query = { isActive: true };
+    
+    if (city) {
+      query.city = { $regex: city, $options: 'i' };
+    }
+    
+    if (search) {
+      query.$text = { $search: search };
+    }
+
+    if (minRating) {
+      query.rating = { $gte: parseFloat(minRating) };
+    }
+
+    // Get shops
+    let shops = await Shop.find(query)
+      .populate('owner', 'name email')
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    // Add distance calculation if user location provided
+    if (userLat && userLon) {
+      shops = findNearbyItems(shops, parseFloat(userLat), parseFloat(userLon));
+      
+      // If sortBy is not distance, re-sort as needed
+      if (sortBy !== 'distance') {
+        shops.sort((a, b) => {
+          if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        });
+      }
+    } else {
+      // Convert to plain objects for consistency
+      shops = shops.map(shop => {
+        const shopObj = shop.toObject();
+        return {
+          ...shopObj,
+          distance: null,
+          distanceText: 'Distance unavailable'
+        };
+      });
+      
+      // Sort by other criteria if not distance
+      if (sortBy === 'rating') {
+        shops.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      } else {
+        shops.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      }
+    }
+
+    const total = await Shop.countDocuments(query);
+
+    res.json({
+      success: true,
+      count: shops.length,
+      total,
+      data: shops,
+      userLocation: userLat && userLon ? { lat: userLat, lon: userLon } : null
+    });
+
+  } catch (error) {
+    console.error('Error getting nearby shops:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};
+
+// @desc    Recalculate shop rating based on fabric reviews
+// @route   PUT /api/v1/shops/:id/recalculate-rating
+// @access  Private (Shop owner or Admin)
+export const recalculateShopRating = async (req, res) => {
+  try {
+    const shop = await Shop.findById(req.params.id);
+
+    if (!shop) {
+      return res.status(404).json({
+        success: false,
+        message: 'Shop not found'
+      });
+    }
+
+    // Check if user is shop owner or admin
+    if (shop.owner.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(401).json({
+        success: false,
+        message: 'Not authorized to update this shop'
+      });
+    }
+
+    const result = await updateShopRating(req.params.id);
+
+    res.json({
+      success: true,
+      message: 'Shop rating recalculated successfully',
+      data: result
+    });
+  } catch (error) {
+    console.error('Recalculate shop rating error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Recalculate all shop ratings (Admin only)
+// @route   PUT /api/v1/shops/recalculate-all-ratings
+// @access  Private (Admin only)
+export const recalculateAllRatings = async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(401).json({
+        success: false,
+        message: 'Not authorized. Admin access required.'
+      });
+    }
+
+    const result = await recalculateAllShopRatings();
+
+    res.json({
+      success: true,
+      message: 'All shop ratings recalculated successfully',
+      data: result
+    });
+  } catch (error) {
+    console.error('Recalculate all ratings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
     });
   }
 };

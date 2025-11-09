@@ -105,6 +105,31 @@ const customerSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  // Current location tracking
+  latitude: {
+    type: Number,
+    min: -90,
+    max: 90
+  },
+  longitude: {
+    type: Number,
+    min: -180,
+    max: 180
+  },
+  location: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point'
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      index: '2dsphere'
+    }
+  },
+  lastLocationUpdate: {
+    type: Date
+  },
   isActive: {
     type: Boolean,
     default: true
@@ -126,5 +151,8 @@ customerSchema.index({
 
 // Index for filtering
 customerSchema.index({ city: 1, isActive: 1 });
+
+// Geospatial index for location-based queries
+customerSchema.index({ location: '2dsphere' });
 
 export default mongoose.model('Customer', customerSchema);

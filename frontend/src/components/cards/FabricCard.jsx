@@ -12,7 +12,7 @@ const FabricCard = ({ fabric }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -5 }}
-      className="card group"
+      className="card group flex flex-col"
     >
       <div className="relative overflow-hidden rounded-xl mb-4">
         <img
@@ -30,7 +30,7 @@ const FabricCard = ({ fabric }) => {
         )}
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-3 flex-grow">
         <Link to={`/fabric/${fabric._id}`}>
           <h3 className="text-lg font-bold text-slate-800 group-hover:text-customer-primary transition-colors duration-300 cursor-pointer">
             {fabric.name}
@@ -61,23 +61,23 @@ const FabricCard = ({ fabric }) => {
             <span className="font-semibold">{fabric.material}</span>
           </div>
         </div>
-
-        {user && user.role === 'customer' && (
-          <div className="space-y-3">
-            {/* View Fabric Button */}
-            <Link to={`/fabric/${fabric._id}`}>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full flex items-center justify-center space-x-2 btn-primary"
-              >
-                <Eye className="w-4 h-4" />
-                <span>View Fabric</span>
-              </motion.button>
-            </Link>
-          </div>
-        )}
       </div>
+
+      {user && user.role === 'customer' && (
+        <div className="space-y-3 mt-4">
+          {/* View Fabric Button */}
+          <Link to={`/fabric/${fabric._id}`}>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full flex items-center justify-center space-x-2 btn-primary"
+            >
+              <Eye className="w-4 h-4" />
+              <span>View Fabric</span>
+            </motion.button>
+          </Link>
+        </div>
+      )}
     </motion.div>
   );
 };

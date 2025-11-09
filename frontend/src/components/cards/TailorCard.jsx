@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Star, MapPin, Phone, Award, Clock } from 'lucide-react';
+import { Star, MapPin, Phone, Award, Clock, Navigation } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { formatDistance } from '../../utils/geolocation';
 
 const TailorCard = ({ tailor }) => {
   const navigate = useNavigate();
@@ -40,6 +41,15 @@ const TailorCard = ({ tailor }) => {
             <MapPin className="w-4 h-4 text-tailor-primary" />
             <span className="text-sm">{tailor.city}</span>
           </div>
+          
+          {(tailor.distance !== undefined && tailor.distance !== null) && (
+            <div className="flex items-center space-x-2 text-slate-600">
+              <Navigation className="w-4 h-4 text-tailor-primary" />
+              <span className="text-sm font-medium text-tailor-primary">
+                {tailor.distanceText || formatDistance(tailor.distance)}
+              </span>
+            </div>
+          )}
           
           <div className="flex items-center space-x-2 text-slate-600">
             <Clock className="w-4 h-4 text-tailor-primary" />

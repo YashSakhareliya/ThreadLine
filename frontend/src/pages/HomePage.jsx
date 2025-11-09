@@ -86,8 +86,8 @@ const HomePage = () => {
                 transition={{ delay: 0.4 }}
                 className="text-xl md:text-2xl text-slate-600 max-w-3xl mx-auto leading-relaxed"
               >
-                Connect with the best fabric shops and tailors in your city. 
-                Quality fabrics, skilled craftsmanship, delivered to your doorstep.
+               Connect with the best fabric shops and tailors in your city. 
+                Quality fabrics, skilled craftsmanship, find the nearest to you.
               </motion.p>
             </div>
 

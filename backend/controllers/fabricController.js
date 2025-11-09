@@ -1,6 +1,7 @@
 import Fabric from '../models/Fabric.js';
 import Shop from '../models/Shop.js';
 import { validationResult } from 'express-validator';
+import { updateShopRating } from '../utils/shopUtils.js';
 
 // @desc    Get all fabrics
 // @route   GET /api/v1/fabrics
@@ -13,7 +14,8 @@ export const getAllFabrics = async (req, res) => {
       material, 
       minPrice, 
       maxPrice, 
-      search, 
+      search,
+      city,
       sortBy = 'createdAt', 
       page = 1, 
       limit = 20 
@@ -21,6 +23,15 @@ export const getAllFabrics = async (req, res) => {
 
     // Build query
     let query = { isActive: true };
+    
+    // Handle city filter - fabrics don't have city, but shops do
+    if (city) {
+      const shopsInCity = await Shop.find({ 
+        city: { $regex: city, $options: 'i' } 
+      }).select('_id');
+      const shopIds = shopsInCity.map(shop => shop._id);
+      query.shop = { $in: shopIds };
+    }
     
     if (category) {
       query.category = category;
@@ -276,11 +287,12 @@ export const addFabricReview = async (req, res) => {
 
     await fabric.save();
 
-    // Update shop total reviews count
-    const shop = await Shop.findById(fabric.shop);
-    if (shop) {
-      shop.totalReviews = (shop.totalReviews || 0) + 1;
-      await shop.save();
+    // Update shop total reviews count and shop rating using utility function
+    try {
+      await updateShopRating(fabric.shop);
+    } catch (error) {
+      console.error('Error updating shop rating:', error);
+      // Continue even if shop rating update fails
     }
 
     res.status(201).json({

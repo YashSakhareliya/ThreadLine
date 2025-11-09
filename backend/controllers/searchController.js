@@ -297,3 +297,40 @@ export const nearbySearch = async (req, res) => {
     });
   }
 };
+
+// @desc    Get all available cities from shops and tailors
+// @route   GET /api/v1/search/cities
+// @access  Public
+export const getAllCities = async (req, res) => {
+  try {
+    // Get cities from shops
+    const shopCities = await Shop.distinct('city', { isActive: true });
+    
+    // Get cities from tailors (using both city and address.city fields)
+    const tailorMainCities = await Tailor.distinct('city', { isActive: true });
+    const tailorAddressCities = await Tailor.distinct('address.city', { 
+      isActive: true,
+      'address.city': { $exists: true, $ne: null, $ne: '' }
+    });
+    
+    // Combine and deduplicate all cities
+    const allCities = [...new Set([
+      ...shopCities,
+      ...tailorMainCities,
+      ...tailorAddressCities
+    ])].filter(city => city && city.trim() !== '').sort();
+
+    res.json({
+      success: true,
+      count: allCities.length,
+      data: allCities
+    });
+
+  } catch (error) {
+    console.error('Get all cities error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};

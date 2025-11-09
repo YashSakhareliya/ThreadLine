@@ -42,9 +42,23 @@ const replyToInquiry = (tailorId, inquiryId, replyData) => {
   return api.post(`/tailors/${tailorId}/inquiries/${inquiryId}/reply`, replyData);
 };
 
+const markInquiryAsRead = (tailorId, inquiryId) => {
+  return api.patch(`/tailors/${tailorId}/inquiries/${inquiryId}/read`);
+};
+
+const closeInquiry = (tailorId, inquiryId) => {
+  return api.patch(`/tailors/${tailorId}/inquiries/${inquiryId}/close`);
+};
+
+const getNearbyTailors = (params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return api.get(`/tailors/nearby${queryString ? `?${queryString}` : ''}`);
+};
+
 export default {
   getAllTailors,
   getTailorsByFabric,
+  getNearbyTailors,
   getTailorById,
   createTailor,
   updateTailor,
@@ -52,5 +66,7 @@ export default {
   addTailorReview,
   sendInquiry,
   getTailorInquiries,
-  replyToInquiry
+  replyToInquiry,
+  markInquiryAsRead,
+  closeInquiry
 };

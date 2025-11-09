@@ -284,11 +284,11 @@ const FabricDetailsPage = () => {
             <div className="border-t border-slate-200 pt-6">
               <h3 className="font-semibold text-slate-800 mb-3">Sold by</h3>
               <div className="flex items-center space-x-3">
-                <img
-                  src={shop.image}
+                {/* <img
+                  src={shop.image || '/placeholder.svg'}
                   alt={shop.name}
                   className="w-12 h-12 object-cover rounded-lg"
-                />
+                /> */}
                 <div>
                   <h4 className="font-semibold text-slate-800">{shop.name}</h4>
                   <div className="flex items-center space-x-2">
@@ -299,23 +299,7 @@ const FabricDetailsPage = () => {
               </div>
             </div>
 
-            {/* Delivery Info */}
-            <div className="border-t border-slate-200 pt-6">
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <Truck className="w-5 h-5 text-green-600" />
-                  <span className="text-slate-700">Free delivery on orders above ₹1000</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <RotateCcw className="w-5 h-5 text-blue-600" />
-                  <span className="text-slate-700">7 days return policy</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Shield className="w-5 h-5 text-purple-600" />
-                  <span className="text-slate-700">100% authentic products</span>
-                </div>
-              </div>
-            </div>
+            
           </motion.div>
         </div>
 
