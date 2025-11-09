@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, MapPin, Filter } from 'lucide-react';
-import { cities } from '../../data/mockData';
+import searchService from '../../services/searchService';
 
 const SearchBar = ({ 
   onSearch, 
@@ -11,8 +11,9 @@ const SearchBar = ({
 }) => {
   const [query, setQuery] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
-  const [selectedType, setSelectedType] = useState(searchType);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [cities, setCities] = useState([]);
+  const [citiesLoading, setCitiesLoading] = useState(false);
   const [filters, setFilters] = useState({
     category: '',
     material: '',
@@ -21,22 +22,34 @@ const SearchBar = ({
     maxPrice: ''
   });
 
+  // Fetch cities from API
+  useEffect(() => {
+    const fetchCities = async () => {
+      setCitiesLoading(true);
+      try {
+        const response = await searchService.getAllCities();
+        setCities(response.data.data || []);
+      } catch (error) {
+        console.error('Failed to fetch cities:', error);
+        // Fallback to some default cities
+        setCities(['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata', 'Hyderabad', 'Pune', 'Ahmedabad']);
+      } finally {
+        setCitiesLoading(false);
+      }
+    };
+
+    fetchCities();
+  }, []);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     onSearch({ 
       query, 
       city: selectedCity, 
-      type: selectedType,
+      type: searchType,
       ...filters 
     });
   };
-
-  const searchTypes = [
-    { value: 'all', label: 'All' },
-    { value: 'fabrics', label: 'Fabrics' },
-    { value: 'shops', label: 'Shops' },
-    { value: 'tailors', label: 'Tailors' }
-  ];
 
   const categories = [
     'Traditional', 'Formal', 'Casual', 'Ethnic', 'Western', 'Wedding', 'Party'
@@ -57,21 +70,6 @@ const SearchBar = ({
         <div className="flex flex-col gap-2">
           {/* Main Search Row */}
           <div className="flex flex-col md:flex-row gap-2">
-            {/* Search Type Selector */}
-            <div className="relative">
-              <select
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-                className="px-4 py-4 bg-transparent border-0 focus:outline-none text-slate-700 appearance-none cursor-pointer min-w-[120px] font-semibold"
-              >
-                {searchTypes.map((type) => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
             {/* Search Input */}
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />

@@ -83,14 +83,14 @@ const Navbar = () => {
                   to="/shops"
                   className="text-slate-700 hover:text-customer-primary transition-colors duration-300"
                 >
-                  All Shops
+                  Find Shops
                 </Link>
 
                 <Link
                   to="/fabrics"
                   className="text-slate-700 hover:text-customer-primary transition-colors duration-300"
                 >
-                  All Fabrics
+                  Find Fabrics
                 </Link>
 
                 <Link
