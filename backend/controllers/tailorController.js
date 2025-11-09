@@ -359,27 +359,57 @@ export const getTailorsByFabric = async (req, res) => {
     // Remove duplicates
     specializationFilter = [...new Set(specializationFilter)];
     
+    // Build OR conditions array
+    let orConditions = [];
+    
+    // Add specialization condition if we have matching specializations
     if (specializationFilter.length > 0) {
-      query.specialization = { $in: specializationFilter };
+      orConditions.push({ specialization: { $in: specializationFilter } });
     }
     
-    // Filter by city if provided (check both main city and address.city)
+    // Add city condition if provided
     if (city) {
-      query.$or = [
-        ...query.$or || [],
-        { city: { $regex: city, $options: 'i' } },
-        { 'address.city': { $regex: city, $options: 'i' } }
-      ];
+      orConditions.push({ city: { $regex: new RegExp(`^${city}$`, 'i') } });
+    }
+    
+    // If we have any OR conditions, add them to the query
+    if (orConditions.length > 0) {
+      query.$or = orConditions;
     }
 
     // Find matching tailors
     let tailors = await Tailor.find(query)
       .populate('owner', 'name email')
-      .sort({ rating: -1, totalReviews: -1 })
-      .limit(parseInt(limit));
+      .sort({ rating: -1, totalReviews: -1 });
 
     // Convert to plain objects for consistency
     tailors = tailors.map(tailor => tailor.toObject());
+
+    // Prioritize tailors by city match and rating
+    if (city) {
+      tailors = tailors.sort((a, b) => {
+        const aCityMatch = a.city?.toLowerCase() === city.toLowerCase();
+        const bCityMatch = b.city?.toLowerCase() === city.toLowerCase();
+        
+        // First priority: city match
+        if (aCityMatch && !bCityMatch) return -1;
+        if (!aCityMatch && bCityMatch) return 1;
+        
+        // Second priority: rating (for tailors in same priority group)
+        if ((a.rating || 0) !== (b.rating || 0)) {
+          return (b.rating || 0) - (a.rating || 0);
+        }
+        
+        // Third priority: total reviews
+        return (b.totalReviews || 0) - (a.totalReviews || 0);
+      });
+    }
+
+    // Apply limit after sorting
+    tailors = tailors.slice(0, parseInt(limit));
+
+    console.log(`Found ${tailors.length} tailors for city: ${city}, material: ${material}, category: ${category}`);
+    console.log('Tailors order:', tailors.map(t => ({ name: t.name, city: t.city, rating: t.rating })));
 
     res.json({
       success: true,

@@ -75,18 +75,20 @@ const FabricDetailsPage = () => {
   // Fetch nearest tailors based on fabric properties
   useEffect(() => {
     const fetchNearestTailors = async () => {
-      if (!fabric) return;
+      if (!fabric || !shop) return;
       
       setTailorsLoading(true);
       try {
         const params = {
           material: fabric.material,
           category: fabric.category,
-          city: shop?.city || fabric.city,
-          limit: 6
+          city: shop.city,
+          limit: 3
         };
         
+        console.log('Fetching tailors with params:', params);
         const response = await tailorService.getTailorsByFabric(params);
+        console.log('Tailors response:', response.data);
         setNearestTailors(response.data.data || []);
       } catch (error) {
         console.error('Failed to fetch nearest tailors:', error);
@@ -355,9 +357,13 @@ const FabricDetailsPage = () => {
                 >
                   <div className="flex items-center space-x-4 mb-4">
                     <img
-                      src={tailor.image}
+                      src={tailor.portfolio[0] || '/placeholder-tailor.png'}
                       alt={tailor.name}
-                      className="w-16 h-16 object-cover rounded-full border-2 border-customer-primary"
+                      className="w-20 h-20 object-cover rounded-full border-2 border-customer-primary flex-shrink-0"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(tailor.name) + '&background=4F46E5&color=fff&size=80';
+                      }}
                     />
                     <div className="flex-1">
                       <h3 className="font-bold text-slate-800 text-lg">{tailor.name}</h3>
@@ -418,23 +424,12 @@ const FabricDetailsPage = () => {
                     </p>
                   </div>
 
-                  <div className="flex space-x-2">
-                    <Link 
-                      to={`/tailor/${tailor._id}`}
-                      className="flex-1 bg-customer-primary text-white py-2 px-4 rounded-lg text-center text-sm font-semibold hover:bg-customer-secondary transition-colors duration-300"
-                    >
-                      View Profile
-                    </Link>
-                    <button 
-                      className="flex-1 border border-customer-primary text-customer-primary py-2 px-4 rounded-lg text-sm font-semibold hover:bg-customer-primary hover:text-white transition-colors duration-300"
-                      onClick={() => {
-                        // You could add contact functionality here
-                        console.log('Contact tailor:', tailor._id);
-                      }}
-                    >
-                      Contact
-                    </button>
-                  </div>
+                  <Link 
+                    to={`/tailor/${tailor._id}`}
+                    className="block w-full bg-customer-primary text-white py-2 px-4 rounded-lg text-center text-sm font-semibold hover:bg-customer-secondary transition-colors duration-300"
+                  >
+                    View Profile
+                  </Link>
                 </motion.div>
               ))}
             </div>
