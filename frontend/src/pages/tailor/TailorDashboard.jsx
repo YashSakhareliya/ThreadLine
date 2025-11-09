@@ -20,27 +20,36 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import tailorService from '../../services/tailorService';
 import uploadService from '../../services/uploadService';
+import LocationInput from '../../components/common/LocationInput';
 
 const TailorDashboard = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [selectedInquiry, setSelectedInquiry] = useState(null);
-  const [replyMessage, setReplyMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [tailorProfile, setTailorProfile] = useState(null);
   const [updating, setUpdating] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef(null);
-  
+
   const [profileData, setProfileData] = useState({
+    name: '',
     bio: '',
     specialization: [],
     experience: 0,
     priceRange: '',
     phone: '',
-    email: ''
+    email: '',
+    city: '',
+    address: '',
+    state: '',
+    zipCode: '',
+    country: 'India',
+    completedProjects: 0,
+    latitude: '',
+    longitude: ''
   });
 
   const [portfolio, setPortfolio] = useState([]);
@@ -54,8 +63,6 @@ const TailorDashboard = () => {
 
   // Fetch tailor profile data and inquiries
   useEffect(() => {
-    console.log("in use Effect")
-    console.log(user)
     const fetchTailorData = async () => {
       try {
         setLoading(true);
@@ -71,12 +78,21 @@ const TailorDashboard = () => {
         if (userTailor) {
           setTailorProfile(userTailor);
           setProfileData({
+            name: userTailor.name || '',
             bio: userTailor.bio || '',
             specialization: userTailor.specialization || [],
             experience: userTailor.experience || 0,
             priceRange: userTailor.priceRange || '',
             phone: userTailor.phone || '',
-            email: userTailor.email || ''
+            email: userTailor.email || '',
+            city: typeof userTailor.city === 'object' ? userTailor.city?.name || '' : userTailor.city || '',
+            address: typeof userTailor.address === 'object' ? JSON.stringify(userTailor.address) : userTailor.address || '',
+            state: userTailor.state || '',
+            zipCode: userTailor.zipCode || '',
+            country: userTailor.country || 'India',
+            completedProjects: userTailor.completedProjects || 0,
+            latitude: typeof userTailor.latitude === 'object' ? '' : userTailor.latitude || '',
+            longitude: typeof userTailor.longitude === 'object' ? '' : userTailor.longitude || ''
           });
           console.log(userTailor)
           setPortfolio(userTailor.portfolio || []);
@@ -121,7 +137,7 @@ const TailorDashboard = () => {
 
   // Real inquiries data from backend
   const [inquiries, setInquiries] = useState([]);
-
+  
   const handleProfileSave = async () => {
     if (!tailorProfile?._id) return;
     
@@ -206,18 +222,23 @@ const TailorDashboard = () => {
     }
   };
 
-  const [sendingReply, setSendingReply] = useState(false);
-
-  const handleSendReply = async () => {
-    if (!replyMessage.trim() || !selectedInquiry || !tailorProfile?._id) return;
+  const handleMarkAsRead = async () => {
+    if (!selectedInquiry || !tailorProfile?._id) return;
+    
+    // Skip if already read
+    if (selectedInquiry.status === 'read') {
+      alert('This inquiry has already been marked as read.');
+      return;
+    }
     
     try {
-      setSendingReply(true);
       setError(null);
       
-      await tailorService.replyToInquiry(tailorProfile._id, selectedInquiry._id, {
-        message: replyMessage
-      });
+      // Mark inquiry as read
+      await tailorService.markInquiryAsRead(tailorProfile._id, selectedInquiry._id);
+      
+      // TODO: Future update - Send email notification to customer
+      // Email will be sent from backend automatically
       
       // Refresh inquiries to get updated data
       const inquiriesResponse = await tailorService.getTailorInquiries(tailorProfile._id);
@@ -228,12 +249,38 @@ const TailorDashboard = () => {
       const updatedSelectedInquiry = updatedInquiries.find(inq => inq._id === selectedInquiry._id);
       setSelectedInquiry(updatedSelectedInquiry || null);
       
-      setReplyMessage('');
+      alert('Inquiry marked as read successfully!');
     } catch (err) {
-      console.error('Error sending reply:', err);
-      setError(err.response?.data?.message || 'Failed to send reply. Please try again.');
-    } finally {
-      setSendingReply(false);
+      console.error('Error marking inquiry as read:', err);
+      setError(err.response?.data?.message || 'Failed to mark inquiry as read. Please try again.');
+    }
+  };
+
+  const handleCloseInquiry = async () => {
+    if (!selectedInquiry || !tailorProfile?._id) return;
+    
+    // Confirm before closing
+    const confirmClose = window.confirm('Are you sure you want to close this inquiry? This action will remove it from your dashboard.');
+    if (!confirmClose) return;
+    
+    try {
+      setError(null);
+      
+      // Close inquiry
+      await tailorService.closeInquiry(tailorProfile._id, selectedInquiry._id);
+      
+      // Refresh inquiries to get updated data
+      const inquiriesResponse = await tailorService.getTailorInquiries(tailorProfile._id);
+      const updatedInquiries = inquiriesResponse.data.data || [];
+      setInquiries(updatedInquiries);
+      
+      // Close the inquiry detail modal
+      setSelectedInquiry(null);
+      
+      alert('Inquiry closed successfully!');
+    } catch (err) {
+      console.error('Error closing inquiry:', err);
+      setError(err.response?.data?.message || 'Failed to close inquiry. Please try again.');
     }
   };
 
@@ -441,6 +488,22 @@ const TailorDashboard = () => {
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Tailor Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={profileData.name}
+                    onChange={(e) => setProfileData({...profileData, name: e.target.value})}
+                    disabled={!isEditingProfile}
+                    required
+                    className="input-field disabled:bg-slate-50 disabled:cursor-not-allowed"
+                    placeholder="e.g., Ramesh Tailors"
+                    maxLength={100}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
                     Bio
                   </label>
                   <textarea
@@ -465,6 +528,21 @@ const TailorDashboard = () => {
                       disabled={!isEditingProfile}
                       className="input-field disabled:bg-slate-50 disabled:cursor-not-allowed"
                       min="0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      Completed Projects
+                    </label>
+                    <input
+                      type="number"
+                      value={profileData.completedProjects}
+                      onChange={(e) => setProfileData({...profileData, completedProjects: parseInt(e.target.value) || 0})}
+                      disabled={!isEditingProfile}
+                      className="input-field disabled:bg-slate-50 disabled:cursor-not-allowed"
+                      min="0"
+                      placeholder="Total projects completed"
                     />
                   </div>
 
@@ -508,6 +586,100 @@ const TailorDashboard = () => {
                     />
                   </div>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      City *
+                    </label>
+                    <input
+                      type="text"
+                      value={profileData.city}
+                      onChange={(e) => setProfileData({...profileData, city: e.target.value})}
+                      disabled={!isEditingProfile}
+                      required
+                      className="input-field disabled:bg-slate-50 disabled:cursor-not-allowed"
+                      placeholder="e.g., Mumbai"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      State
+                    </label>
+                    <input
+                      type="text"
+                      value={profileData.state}
+                      onChange={(e) => setProfileData({...profileData, state: e.target.value})}
+                      disabled={!isEditingProfile}
+                      className="input-field disabled:bg-slate-50 disabled:cursor-not-allowed"
+                      placeholder="e.g., Maharashtra"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      Zip Code
+                    </label>
+                    <input
+                      type="text"
+                      value={profileData.zipCode}
+                      onChange={(e) => setProfileData({...profileData, zipCode: e.target.value})}
+                      disabled={!isEditingProfile}
+                      className="input-field disabled:bg-slate-50 disabled:cursor-not-allowed"
+                      placeholder="e.g., 400001"
+                      maxLength="6"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      Country
+                    </label>
+                    <input
+                      type="text"
+                      value={profileData.country}
+                      onChange={(e) => setProfileData({...profileData, country: e.target.value})}
+                      disabled={!isEditingProfile}
+                      className="input-field disabled:bg-slate-50 disabled:cursor-not-allowed"
+                      placeholder="e.g., India"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Address
+                  </label>
+                  <textarea
+                    value={profileData.address}
+                    onChange={(e) => setProfileData({...profileData, address: e.target.value})}
+                    disabled={!isEditingProfile}
+                    rows={2}
+                    className="input-field resize-none disabled:bg-slate-50 disabled:cursor-not-allowed"
+                    placeholder="Shop address, street, landmark, etc."
+                  />
+                </div>
+
+                {isEditingProfile && (
+                  <div>
+                    <LocationInput
+                      latitude={profileData.latitude}
+                      longitude={profileData.longitude}
+                      address={profileData.address}
+                      city={profileData.city}
+                      disabled={!isEditingProfile}
+                      onLocationChange={(lat, lng) => {
+                        setProfileData({
+                          ...profileData,
+                          latitude: lat,
+                          longitude: lng
+                        });
+                      }}
+                      className="bg-slate-50 p-4 rounded-lg border"
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
@@ -667,61 +839,91 @@ const TailorDashboard = () => {
                 </div>
               </div>
 
-              {/* Chat Interface */}
+              {/* Inquiry Details */}
               <div className="lg:col-span-2">
                 {selectedInquiry ? (
-                  <div className="card h-96 flex flex-col">
+                  <div className="card flex flex-col">
                     <div className="border-b border-slate-200 pb-4 mb-4">
-                      <h3 className="text-lg font-bold text-slate-800">{selectedInquiry.customerName}</h3>
-                      <p className="text-sm text-slate-600">{selectedInquiry.customerEmail}</p>
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h3 className="text-lg font-bold text-slate-800">{selectedInquiry.customerName}</h3>
+                          <p className="text-sm text-slate-600">{selectedInquiry.customerEmail}</p>
+                          {(selectedInquiry.customer?.phone || selectedInquiry.customerMobile) && (
+                            <p className="text-sm text-slate-700 font-semibold mt-1 flex items-center">
+                              <span className="mr-1">📱</span>
+                              {selectedInquiry.customer?.phone || selectedInquiry.customerMobile}
+                            </p>
+                          )}
+                        </div>
+                        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                          selectedInquiry.status === 'read' 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : selectedInquiry.status === 'replied'
+                            ? 'bg-purple-100 text-purple-800'
+                            : 'bg-green-100 text-green-800'
+                        }`}>
+                          {selectedInquiry.status === 'read' ? 'Read' : selectedInquiry.status === 'replied' ? 'Replied' : 'New'}
+                        </span>
+                      </div>
+                      <div className="mt-3">
+                        <p className="text-xs text-slate-500">Subject</p>
+                        <p className="text-sm font-semibold text-slate-700">{selectedInquiry.subject}</p>
+                      </div>
                     </div>
                     
-                    <div className="flex-1 overflow-y-auto space-y-3 mb-4">
+                    <div className="flex-1 overflow-y-auto space-y-3 mb-4 max-h-96">
                       {selectedInquiry.messages.map((msg) => (
                         <div
                           key={msg._id}
-                          className={`flex ${msg.isCustomer ? 'justify-start' : 'justify-end'}`}
+                          className="flex justify-start"
                         >
-                          <div
-                            className={`max-w-xs px-3 py-2 rounded-lg ${
-                              msg.isCustomer
-                                ? 'bg-slate-100 text-slate-800'
-                                : 'bg-tailor-primary text-white'
-                            }`}
-                          >
+                          <div className="max-w-md px-4 py-3 rounded-lg bg-slate-100 text-slate-800">
                             <p className="text-sm">{msg.message}</p>
-                            <p className="text-xs opacity-70 mt-1">{new Date(msg.timestamp).toLocaleString()}</p>
+                            <p className="text-xs text-slate-500 mt-1">{new Date(msg.timestamp).toLocaleString()}</p>
                           </div>
                         </div>
                       ))}
                     </div>
                     
                     <div className="border-t border-slate-200 pt-4">
-                      <div className="flex space-x-2">
-                        <input
-                          type="text"
-                          value={replyMessage}
-                          onChange={(e) => setReplyMessage(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && handleSendReply()}
-                          placeholder="Type your reply..."
-                          className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-tailor-primary"
-                        />
-                        <button
-                          onClick={handleSendReply}
-                          disabled={sendingReply || !replyMessage.trim()}
-                          className="px-4 py-2 bg-tailor-primary text-white rounded-lg hover:bg-tailor-secondary transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                        >
-                          {sendingReply && <Loader className="w-4 h-4 animate-spin" />}
-                          <span>{sendingReply ? 'Sending...' : 'Send'}</span>
-                        </button>
-                      </div>
+                      <button
+                        onClick={handleMarkAsRead}
+                        disabled={selectedInquiry.status === 'read'}
+                        className={`w-full px-4 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center space-x-2 ${
+                          selectedInquiry.status === 'read'
+                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-tailor-primary to-tailor-secondary text-white hover:shadow-lg'
+                        }`}
+                      >
+                        <Eye className="w-5 h-5" />
+                        <span>
+                          {selectedInquiry.status === 'read' ? 'Already Marked as Read' : 'Mark as Read'}
+                        </span>
+                      </button>
+                      <p className="text-xs text-slate-500 text-center mt-2">
+                        {selectedInquiry.status === 'read' 
+                          ? 'This inquiry has been marked as read'
+                          : 'Mark this inquiry as read to notify the customer'
+                        }
+                      </p>
+                      
+                      <button
+                        onClick={handleCloseInquiry}
+                        className="w-full mt-3 px-4 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center space-x-2 bg-red-500 text-white hover:bg-red-600 hover:shadow-lg"
+                      >
+                        <X className="w-5 h-5" />
+                        <span>Close Inquiry</span>
+                      </button>
+                      <p className="text-xs text-slate-500 text-center mt-2">
+                        Closing this inquiry will remove it from your dashboard permanently
+                      </p>
                     </div>
                   </div>
                 ) : (
-                  <div className="card h-96 flex items-center justify-center">
+                  <div className="card flex items-center justify-center" style={{ minHeight: '400px' }}>
                     <div className="text-center">
                       <MessageCircle className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-                      <p className="text-slate-600">Select an inquiry to start chatting</p>
+                      <p className="text-slate-600">Select an inquiry to view details</p>
                     </div>
                   </div>
                 )}

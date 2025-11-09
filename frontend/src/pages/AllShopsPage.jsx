@@ -4,6 +4,7 @@ import { Filter, Grid, List, Search, Loader } from 'lucide-react';
 import ShopCard from '../components/cards/ShopCard';
 import SearchBar from '../components/common/SearchBar';
 import shopService from '../services/shopService';
+import { requestUserLocation } from '../utils/geolocation';
 
 const AllShopsPage = () => {
   const [shops, setShops] = useState([]);
@@ -23,7 +24,26 @@ const AllShopsPage = () => {
     const fetchShops = async () => {
       try {
         setLoading(true);
-        const response = await shopService.getAllShops();
+        
+        // Try to get user location for distance calculation
+        const locationResult = await requestUserLocation();
+        let apiParams = {};
+        
+        if (locationResult.success) {
+          apiParams = {
+            userLat: locationResult.data.lat,
+            userLon: locationResult.data.lon
+          };
+          console.log('Using user location for distance calculation:', apiParams);
+        } else {
+          console.log('Location not available:', locationResult.error);
+        }
+        
+        // Use getNearbyShops for distance calculation, or getAllShops as fallback
+        const response = locationResult.success 
+          ? await shopService.getNearbyShops(apiParams)
+          : await shopService.getAllShops();
+        
         setShops(response.data.data);
         setFilteredShops(response.data.data);
         const uniqueCities = [...new Set(response.data.data.map(shop => shop.city))];

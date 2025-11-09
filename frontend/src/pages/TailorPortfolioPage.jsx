@@ -178,11 +178,19 @@ const TailorPortfolioPage = () => {
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center space-x-3">
-                  <MapPin className="w-5 h-5 text-tailor-primary" />
-                  <div>
-                    <p className="font-semibold text-slate-700">Location</p>
-                    <p className="text-slate-600">{tailor.city}</p>
+                <div className="flex items-start space-x-3">
+                  <MapPin className="w-5 h-5 text-tailor-primary mt-1" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-slate-700 mb-1">Address</p>
+                    <div className="text-slate-600 space-y-1">
+                      {tailor.address && <p>{tailor.address}</p>}
+                      <p>
+                        {tailor.city && <span>{tailor.city}</span>}
+                        {tailor.state && <span>, {tailor.state}</span>}
+                        {tailor.zipCode && <span> - {tailor.zipCode}</span>}
+                      </p>
+                      {tailor.country && <p>{tailor.country}</p>}
+                    </div>
                   </div>
                 </div>
 

@@ -32,7 +32,6 @@ const addressSchema = new mongoose.Schema({
   phone: {
     type: String,
     required: true,
-    match: [/^\+?[1-9]\d{1,14}$/, 'Please enter a valid phone number']
   },
   isDefault: {
     type: Boolean,
@@ -61,7 +60,6 @@ const customerSchema = new mongoose.Schema({
   phone: {
     type: String,
     required: [true, 'Phone number is required'],
-    match: [/^\+?[1-9]\d{1,14}$/, 'Please enter a valid phone number']
   },
   city: {
     type: String,

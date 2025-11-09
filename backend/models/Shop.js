@@ -26,27 +26,43 @@ const shopSchema = new mongoose.Schema({
   phone: {
     type: String,
     required: [true, 'Phone number is required'],
-    match: [/^\+?[1-9]\d{1,14}$/, 'Please enter a valid phone number']
   },
   address: {
-    type: String,
-    required: [true, 'Address is required']
+    type: String
   },
   city: {
     type: String,
-    required: [true, 'City is required']
   },
   state: {
-    type: String,
-    required: [true, 'State is required']
+    type: String
   },
   zipCode: {
-    type: String,
-    required: [true, 'Zip code is required']
+    type: String
   },
   country: {
     type: String,
     default: 'India'
+  },
+  location: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point'
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      index: '2dsphere'
+    }
+  },
+  latitude: {
+    type: Number,
+    min: -90,
+    max: 90
+  },
+  longitude: {
+    type: Number,
+    min: -180,
+    max: 180
   },
   image: {
     type: String,

@@ -25,6 +25,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import shopService from '../../services/shopService';
 import fabricService from '../../services/fabricService';
 import uploadService from '../../services/uploadService';
+import LocationInput from '../../components/common/LocationInput';
 
 const ShopDashboard = () => {
   const { user } = useAuth();
@@ -63,7 +64,9 @@ const ShopDashboard = () => {
     country: 'India',
     image: '',
     businessLicense: '',
-    gstNumber: ''
+    gstNumber: '',
+    latitude: '',
+    longitude: ''
   });
 
   const [fabricsLoading, setFabricsLoading] = useState(false);
@@ -197,6 +200,7 @@ const ShopDashboard = () => {
           const ownerId = s.owner?._id || s.owner;
           return ownerId === user._id;
         });
+        console.log(userShop)
         if (userShop) {
           setShop(userShop);
           setShopDetails({
@@ -209,6 +213,8 @@ const ShopDashboard = () => {
             state: userShop.state || '',
             zipCode: userShop.zipCode || '',
             country: userShop.country || 'India',
+            latitude: userShop.latitude || '',
+            longitude: userShop.longitude || '',
             image: userShop.image || '',
             businessLicense: userShop.businessLicense || '',
             gstNumber: userShop.gstNumber || ''
@@ -613,10 +619,11 @@ const ShopDashboard = () => {
                         <input
                           type="email"
                           value={shopDetails.email}
-                          onChange={(e) => setShopDetails({...shopDetails, email: e.target.value})}
-                          className="input-field"
+                          readOnly
+                          className="input-field bg-slate-50 cursor-not-allowed"
                           placeholder="shop@example.com"
                         />
+                        <p className="text-xs text-slate-500 mt-1">Email cannot be changed</p>
                       </div>
 
                       <div>
@@ -694,6 +701,20 @@ const ShopDashboard = () => {
                           onChange={(e) => setShopDetails({...shopDetails, country: e.target.value})}
                           className="input-field"
                           placeholder="India"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <LocationInput
+                          latitude={shopDetails.latitude}
+                          longitude={shopDetails.longitude}
+                          onLocationChange={(lat, lng) => 
+                            setShopDetails({
+                              ...shopDetails, 
+                              latitude: lat, 
+                              longitude: lng
+                            })
+                          }
                         />
                       </div>
 

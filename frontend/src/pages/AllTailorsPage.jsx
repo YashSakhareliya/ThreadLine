@@ -6,6 +6,7 @@ import { setFilters, clearFilters, setInitialTailors } from '../store/slices/tai
 import SearchBar from '../components/common/SearchBar';
 import tailorService from '../services/tailorService';
 import { useNavigate } from 'react-router-dom';
+import { requestUserLocation } from '../utils/geolocation';
 
 const AllTailorsPage = () => {
   const dispatch = useDispatch();
@@ -22,7 +23,26 @@ const AllTailorsPage = () => {
     const fetchTailors = async () => {
       try {
         setLoading(true);
-        const res = await tailorService.getAllTailors();
+        
+        // Try to get user location for distance calculation
+        const locationResult = await requestUserLocation();
+        let apiParams = {};
+        
+        if (locationResult.success) {
+          apiParams = {
+            userLat: locationResult.data.lat,
+            userLon: locationResult.data.lon
+          };
+          console.log('Using user location for distance calculation:', apiParams);
+        } else {
+          console.log('Location not available:', locationResult.error);
+        }
+        
+        // Use getNearbyTailors for distance calculation, or getAllTailors as fallback
+        const res = locationResult.success 
+          ? await tailorService.getNearbyTailors(apiParams)
+          : await tailorService.getAllTailors();
+        
         const tailors = res.data.data;
         dispatch(setInitialTailors(tailors));
         setCities([...new Set(tailors.map(t => t.city))]);
