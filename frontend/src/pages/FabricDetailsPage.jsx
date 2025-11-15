@@ -1,40 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Star, 
   Heart, 
   Share2, 
-  ShoppingCart, 
   Package, 
   Ruler, 
   Palette, 
   ChevronLeft, 
   ChevronRight,
   X,
-  Plus,
-  Minus,
   Truck,
   Shield,
   RotateCcw,
-  AlertCircle
+  AlertCircle,
+  Eye
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { addToCartAsync } from '../store/slices/cartSlice';
-import { useDispatch, useSelector } from 'react-redux';
 import fabricService from '../services/fabricService';
 import shopService from '../services/shopService';
+import tailorService from '../services/tailorService';
 
 const FabricDetailsPage = () => {
   const { id } = useParams();
   const { user } = useAuth();
-  const dispatch = useDispatch();
-  const { loading } = useSelector(state => state.cart);
   const [fabric, setFabric] = useState(null);
   const [shop, setShop] = useState(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [showImageModal, setShowImageModal] = useState(false);
-  const [quantity, setQuantity] = useState(1);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [newReview, setNewReview] = useState({ rating: 5, comment: '', images: [] });
   const [isLiked, setIsLiked] = useState(false);
@@ -42,6 +36,8 @@ const FabricDetailsPage = () => {
   const [reviewError, setReviewError] = useState('');
   const [canReview, setCanReview] = useState(false);
   const [hasReviewed, setHasReviewed] = useState(false);
+  const [nearestTailors, setNearestTailors] = useState([]);
+  const [tailorsLoading, setTailorsLoading] = useState(false);
 
   useEffect(() => {
     const fetchFabricDetails = async () => {
@@ -76,11 +72,34 @@ const FabricDetailsPage = () => {
     fetchFabricDetails();
   }, [id, user]);
 
-  const handleAddToCart = () => {
-    if (user && user.role === 'customer' && fabric) {
-      dispatch(addToCartAsync({ fabricId: fabric._id, quantity }));
-    }
-  };
+  // Fetch nearest tailors based on fabric properties
+  useEffect(() => {
+    const fetchNearestTailors = async () => {
+      if (!fabric || !shop) return;
+      
+      setTailorsLoading(true);
+      try {
+        const params = {
+          material: fabric.material,
+          category: fabric.category,
+          city: shop.city,
+          limit: 3
+        };
+        
+        console.log('Fetching tailors with params:', params);
+        const response = await tailorService.getTailorsByFabric(params);
+        console.log('Tailors response:', response.data);
+        setNearestTailors(response.data.data || []);
+      } catch (error) {
+        console.error('Failed to fetch nearest tailors:', error);
+        setNearestTailors([]);
+      } finally {
+        setTailorsLoading(false);
+      }
+    };
+
+    fetchNearestTailors();
+  }, [fabric, shop]);
 
   const handleSubmitReview = async () => {
     if (!newReview.comment.trim()) {
@@ -247,37 +266,18 @@ const FabricDetailsPage = () => {
 
               {user && user.role === 'customer' && (
                 <div className="space-y-4">
-                  <div className="flex items-center space-x-4">
-                    <span className="font-semibold text-slate-700">Quantity:</span>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors duration-300"
+                  {shop && (
+                    <Link to={`/shop/${shop._id}`}>
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="w-full flex items-center justify-center space-x-2 btn-primary"
                       >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <span className="w-12 text-center font-semibold">{quantity}</span>
-                      <button
-                        onClick={() => setQuantity(Math.min(fabric.stock, quantity + 1))}
-                        className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors duration-300"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handleAddToCart}
-                    disabled={fabric.stock === 0 || loading}
-                    className="w-full flex items-center justify-center space-x-2 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ShoppingCart className="w-5 h-5" />
-                    <span>
-                      {loading ? 'Adding...' : fabric.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
-                    </span>
-                  </motion.button>
+                        <Eye className="w-5 h-5" />
+                        <span>View Shop</span>
+                      </motion.button>
+                    </Link>
+                  )}
                 </div>
               )}
             </div>
@@ -286,11 +286,11 @@ const FabricDetailsPage = () => {
             <div className="border-t border-slate-200 pt-6">
               <h3 className="font-semibold text-slate-800 mb-3">Sold by</h3>
               <div className="flex items-center space-x-3">
-                <img
-                  src={shop.image}
+                {/* <img
+                  src={shop.image || '/placeholder.svg'}
                   alt={shop.name}
                   className="w-12 h-12 object-cover rounded-lg"
-                />
+                /> */}
                 <div>
                   <h4 className="font-semibold text-slate-800">{shop.name}</h4>
                   <div className="flex items-center space-x-2">
@@ -301,23 +301,7 @@ const FabricDetailsPage = () => {
               </div>
             </div>
 
-            {/* Delivery Info */}
-            <div className="border-t border-slate-200 pt-6">
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <Truck className="w-5 h-5 text-green-600" />
-                  <span className="text-slate-700">Free delivery on orders above ₹1000</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <RotateCcw className="w-5 h-5 text-blue-600" />
-                  <span className="text-slate-700">7 days return policy</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Shield className="w-5 h-5 text-purple-600" />
-                  <span className="text-slate-700">100% authentic products</span>
-                </div>
-              </div>
-            </div>
+            
           </motion.div>
         </div>
 
@@ -339,6 +323,135 @@ const FabricDetailsPage = () => {
               </div>
             ))}
           </div>
+        </motion.div>
+
+        {/* Nearest Tailors */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="card mt-8"
+        >
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-800">Recommended Tailors</h2>
+              <p className="text-slate-600 mt-1">Expert tailors who specialize in working with {fabric.material} fabrics</p>
+            </div>
+            {tailorsLoading && (
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 border-2 border-customer-primary border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-sm text-slate-500">Finding tailors...</span>
+              </div>
+            )}
+          </div>
+
+          {nearestTailors.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {nearestTailors.map((tailor) => (
+                <motion.div
+                  key={tailor._id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  whileHover={{ y: -5 }}
+                  className="bg-white border border-slate-200 rounded-2xl p-6 hover:shadow-lg transition-all duration-300"
+                >
+                  <div className="flex items-center space-x-4 mb-4">
+                    <img
+                      src={tailor.portfolio[0] || '/placeholder-tailor.png'}
+                      alt={tailor.name}
+                      className="w-20 h-20 object-cover rounded-full border-2 border-customer-primary flex-shrink-0"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(tailor.name) + '&background=4F46E5&color=fff&size=80';
+                      }}
+                    />
+                    <div className="flex-1">
+                      <h3 className="font-bold text-slate-800 text-lg">{tailor.name}</h3>
+                      <p className="text-slate-600 text-sm">{tailor.city}</p>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <div className="flex items-center">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-4 h-4 ${
+                                i < Math.floor(tailor.rating) 
+                                  ? 'text-yellow-500 fill-current' 
+                                  : 'text-slate-300'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-sm text-slate-600">
+                          {tailor.rating > 0 ? tailor.rating.toFixed(1) : 'New'} 
+                          ({tailor.totalReviews} reviews)
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {tailor.specialization.slice(0, 3).map((spec, index) => (
+                        <span 
+                          key={index}
+                          className="px-2 py-1 bg-customer-primary/10 text-customer-primary text-xs rounded-full"
+                        >
+                          {spec}
+                        </span>
+                      ))}
+                      {tailor.specialization.length > 3 && (
+                        <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded-full">
+                          +{tailor.specialization.length - 3} more
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="flex justify-between items-center text-sm text-slate-600 mb-3">
+                      <span>Experience: {tailor.experience} years</span>
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        tailor.availability === 'Available' 
+                          ? 'bg-green-100 text-green-800' 
+                          : tailor.availability === 'Busy'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {tailor.availability}
+                      </span>
+                    </div>
+
+                    <p className="text-slate-600 text-sm line-clamp-2 mb-4">
+                      {tailor.bio}
+                    </p>
+                  </div>
+
+                  <Link 
+                    to={`/tailor/${tailor._id}`}
+                    className="block w-full bg-customer-primary text-white py-2 px-4 rounded-lg text-center text-sm font-semibold hover:bg-customer-secondary transition-colors duration-300"
+                  >
+                    View Profile
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            !tailorsLoading && (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Eye className="w-8 h-8 text-slate-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-600 mb-2">No Tailors Found</h3>
+                <p className="text-slate-500">
+                  We couldn't find any tailors specializing in {fabric.material} fabrics in your area.
+                </p>
+                <Link 
+                  to="/tailors"
+                  className="inline-block mt-4 bg-customer-primary text-white py-2 px-6 rounded-lg font-semibold hover:bg-customer-secondary transition-colors duration-300"
+                >
+                  Browse All Tailors
+                </Link>
+              </div>
+            )
+          )}
         </motion.div>
 
         {/* Reviews */}

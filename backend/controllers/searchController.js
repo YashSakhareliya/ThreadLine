@@ -156,3 +156,181 @@ export const getSearchSuggestions = async (req, res) => {
     });
   }
 };
+
+// @desc    Location-aware search with filtering
+// @route   GET /api/v1/search/nearby
+// @access  Public
+export const nearbySearch = async (req, res) => {
+  try {
+    const { 
+      q: query, 
+      type = 'all', 
+      city, 
+      state,
+      category,
+      material,
+      minRating = 0,
+      maxPrice,
+      minPrice,
+      page = 1, 
+      limit = 20 
+    } = req.query;
+
+    if (!query || query.trim().length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: 'Search query must be at least 2 characters long'
+      });
+    }
+
+    const searchResults = {};
+    const searchRegex = { $regex: query, $options: 'i' };
+
+    // Search fabrics with location and filters
+    if (type === 'all' || type === 'fabrics') {
+      let fabricQuery = {
+        isActive: true,
+        $or: [
+          { name: searchRegex },
+          { description: searchRegex },
+          { category: searchRegex },
+          { color: searchRegex },
+          { material: searchRegex }
+        ]
+      };
+
+      // Add filters
+      if (category) fabricQuery.category = { $regex: category, $options: 'i' };
+      if (material) fabricQuery.material = { $regex: material, $options: 'i' };
+      if (minPrice) fabricQuery.price = { ...fabricQuery.price, $gte: parseFloat(minPrice) };
+      if (maxPrice) fabricQuery.price = { ...fabricQuery.price, $lte: parseFloat(maxPrice) };
+
+      const fabrics = await Fabric.find(fabricQuery)
+        .populate({
+          path: 'shop',
+          select: 'name city state rating',
+          match: {
+            ...(city && { city: { $regex: city, $options: 'i' } }),
+            ...(state && { state: { $regex: state, $options: 'i' } }),
+            ...(minRating && { rating: { $gte: parseFloat(minRating) } })
+          }
+        })
+        .limit(limit * 1)
+        .skip((page - 1) * limit)
+        .sort({ totalPurchases: -1 });
+
+      // Filter out fabrics whose shops don't match location criteria
+      const filteredFabrics = fabrics.filter(fabric => fabric.shop);
+
+      searchResults.fabrics = {
+        count: filteredFabrics.length,
+        data: filteredFabrics
+      };
+    }
+
+    // Search shops with location filters
+    if (type === 'all' || type === 'shops') {
+      let shopQuery = {
+        isActive: true,
+        $or: [
+          { name: searchRegex },
+          { description: searchRegex }
+        ]
+      };
+
+      // Add location filters
+      if (city) shopQuery.city = { $regex: city, $options: 'i' };
+      if (state) shopQuery.state = { $regex: state, $options: 'i' };
+      if (minRating) shopQuery.rating = { $gte: parseFloat(minRating) };
+
+      const shops = await Shop.find(shopQuery)
+        .populate('owner', 'name email')
+        .limit(limit * 1)
+        .skip((page - 1) * limit)
+        .sort({ rating: -1 });
+
+      searchResults.shops = {
+        count: shops.length,
+        data: shops
+      };
+    }
+
+    // Search tailors with location and specialization filters
+    if (type === 'all' || type === 'tailors') {
+      let tailorQuery = {
+        isActive: true,
+        $or: [
+          { name: searchRegex },
+          { bio: searchRegex },
+          { specialization: { $in: [searchRegex] } }
+        ]
+      };
+
+      // Add location filters
+      if (city) tailorQuery.city = { $regex: city, $options: 'i' };
+      if (minRating) tailorQuery.rating = { $gte: parseFloat(minRating) };
+
+      const tailors = await Tailor.find(tailorQuery)
+        .populate('owner', 'name email')
+        .limit(limit * 1)
+        .skip((page - 1) * limit)
+        .sort({ rating: -1 });
+
+      searchResults.tailors = {
+        count: tailors.length,
+        data: tailors
+      };
+    }
+
+    res.json({
+      success: true,
+      query,
+      type,
+      filters: { city, state, category, material, minRating },
+      results: searchResults
+    });
+  } catch (error) {
+    console.error('Nearby search error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during search'
+    });
+  }
+};
+
+// @desc    Get all available cities from shops and tailors
+// @route   GET /api/v1/search/cities
+// @access  Public
+export const getAllCities = async (req, res) => {
+  try {
+    // Get cities from shops
+    const shopCities = await Shop.distinct('city', { isActive: true });
+    
+    // Get cities from tailors (using both city and address.city fields)
+    const tailorMainCities = await Tailor.distinct('city', { isActive: true });
+    const tailorAddressCities = await Tailor.distinct('address.city', { 
+      isActive: true,
+      'address.city': { $exists: true, $ne: null, $ne: '' }
+    });
+    
+    // Combine and deduplicate all cities
+    const allCities = [...new Set([
+      ...shopCities,
+      ...tailorMainCities,
+      ...tailorAddressCities
+    ])].filter(city => city && city.trim() !== '').sort();
+
+    res.json({
+      success: true,
+      count: allCities.length,
+      data: allCities
+    });
+
+  } catch (error) {
+    console.error('Get all cities error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};

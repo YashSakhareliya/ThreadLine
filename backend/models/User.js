@@ -21,6 +21,9 @@ const userSchema = new mongoose.Schema({
     minlength: [6, 'Password must be at least 6 characters'],
     select: false
   },
+  city: {
+    type: String
+  },
   role: {
     type: String,
     enum: ['customer', 'shop', 'tailor'],
@@ -28,7 +31,6 @@ const userSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    match: [/^[\+]?[0-9\s\-\(\)]{10,15}$/, 'Please enter a valid phone number']
   },
   address: {
     street: String,

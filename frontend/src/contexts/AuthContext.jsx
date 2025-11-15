@@ -27,8 +27,11 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const loadUser = async () => {
       const token = localStorage.getItem('token');
+      
+      // Always dispatch loginStart to set loading state
+      dispatch(loginStart());
+      
       if (token) {
-        dispatch(loginStart());
         try {
           const res = await authService.getCurrentUser();
           // Backend shape: { success, data: { user } }
@@ -39,18 +42,22 @@ export const AuthProvider = ({ children }) => {
             throw new Error('Invalid auth response');
           }
         } catch (err) {
+          console.error('Auth check failed:', err);
           dispatch(loginFailure(err.message));
           authService.logout(); // Clear invalid token
         }
+      } else {
+        // No token found - finish loading
+        dispatch(loginFailure('No token found'));
       }
     };
     loadUser();
   }, [dispatch]);
 
-  const login = async (email, password) => {
+  const login = async (email, password, role) => {
     dispatch(loginStart());
     try {
-      const loginRes = await authService.login(email, password);
+      const loginRes = await authService.login(email, password, role);
       dispatch(loginSuccess(loginRes.data.user));
       return loginRes.data.user;
     } catch (error) {

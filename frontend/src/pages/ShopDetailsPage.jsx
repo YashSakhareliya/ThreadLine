@@ -39,6 +39,8 @@ const ShopDetailsPage = () => {
         const shopRes = await shopService.getShopById(id);
         const fabricsRes = await fabricService.getFabricsByShop(id);
         setShop(shopRes.data.data);
+        
+        console.log(shopRes.data.data)
         setShopFabrics(fabricsRes.data.data);
         setFilteredFabrics(fabricsRes.data.data);
         setError(null);

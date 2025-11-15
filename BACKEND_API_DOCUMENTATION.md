@@ -206,6 +206,45 @@ Authorization: Bearer <token>
 GET /api/v1/shops/:id/fabrics
 ```
 
+#### Recalculate Shop Rating (Shop Owner/Admin)
+```http
+PUT /api/v1/shops/:id/recalculate-rating
+Authorization: Bearer <token>
+```
+**Description:** Recalculates shop rating based on average of all fabric reviews. Updates both `rating` and `totalReviews` fields.
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Shop rating recalculated successfully",
+  "data": {
+    "totalReviews": 45,
+    "rating": 4.35
+  }
+}
+```
+
+#### Recalculate All Shop Ratings (Admin Only)
+```http
+PUT /api/v1/shops/recalculate-all-ratings
+Authorization: Bearer <token>
+```
+**Description:** Recalculates ratings for all active shops. Useful for data maintenance and migrations.
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "All shop ratings recalculated successfully",
+  "data": {
+    "updated": 50,
+    "failed": 0,
+    "errors": []
+  }
+}
+```
+
 #### Get Shop Orders (Shop Owner Only)
 ```http
 GET /api/v1/shops/:id/orders
@@ -258,6 +297,11 @@ Authorization: Bearer <token>
   "images": ["https://cloudinary.com/review1.jpg"] // optional
 }
 ```
+
+**Auto-Updates:**
+- Updates fabric's average rating
+- Increments shop's total review count
+- Recalculates shop's average rating based on all fabric reviews
 
 ---
 

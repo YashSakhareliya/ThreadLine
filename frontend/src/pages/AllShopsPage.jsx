@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Filter, Grid, List, Search, Loader } from 'lucide-react';
+import { useSelector } from 'react-redux';
 import ShopCard from '../components/cards/ShopCard';
 import SearchBar from '../components/common/SearchBar';
 import shopService from '../services/shopService';
@@ -16,14 +17,21 @@ const AllShopsPage = () => {
   const [filters, setFilters] = useState({
     city: '',
     rating: '',
-    sortBy: 'name'
+    sortBy: 'rating'
   });
+  const { user, isAuthenticated } = useSelector(state => state.auth);
 
   useEffect(() => {
     const fetchShops = async () => {
       try {
         setLoading(true);
+        
+        // Fetch all shops
         const response = await shopService.getAllShops();
+        
+        console.log('Shops received:', response.data.data.length);
+        console.log('Sample shop data:', response.data.data[0]);
+        
         setShops(response.data.data);
         setFilteredShops(response.data.data);
         const uniqueCities = [...new Set(response.data.data.map(shop => shop.city))];
@@ -60,7 +68,7 @@ const AllShopsPage = () => {
         case 'city':
           return a.city.localeCompare(b.city);
         default:
-          return 0;
+          return b.rating - a.rating;
       }
     });
 
@@ -219,8 +227,8 @@ const AllShopsPage = () => {
                   onChange={(e) => handleFilterChange('sortBy', e.target.value)}
                   className="input-field"
                 >
-                  <option value="name">Name</option>
                   <option value="rating">Rating</option>
+                  <option value="name">Name</option>
                   <option value="city">City</option>
                 </select>
               </div>

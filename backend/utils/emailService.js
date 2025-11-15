@@ -33,7 +33,6 @@ export const sendWelcomeEmail = async (userEmail, userName) => {
           <ul>
             <li>Browse premium fabrics from verified shops</li>
             <li>Connect with skilled tailors</li>
-            <li>Place orders and track deliveries</li>
             <li>Leave reviews and ratings</li>
           </ul>
           <p>Happy shopping!</p>
@@ -46,39 +45,6 @@ export const sendWelcomeEmail = async (userEmail, userName) => {
     console.log('Welcome email sent successfully');
   } catch (error) {
     console.error('Error sending welcome email:', error);
-  }
-};
-
-// Send order confirmation email
-export const sendOrderConfirmationEmail = async (userEmail, userName, orderDetails) => {
-  try {
-    const transporter = createTransporter();
-
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: userEmail,
-      subject: `Order Confirmation - ${orderDetails.trackingNumber}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">Order Confirmed!</h2>
-          <p>Hi ${userName},</p>
-          <p>Your order has been confirmed and is being processed.</p>
-          <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3>Order Details:</h3>
-            <p><strong>Order ID:</strong> ${orderDetails._id}</p>
-            <p><strong>Total Amount:</strong> ₹${orderDetails.total}</p>
-            <p><strong>Estimated Delivery:</strong> ${new Date(orderDetails.estimatedDelivery).toLocaleDateString()}</p>
-          </div>
-          <p>You can track your order status in your account dashboard.</p>
-          <p>Thank you for choosing ThreadLine!</p>
-        </div>
-      `
-    };
-
-    await transporter.sendMail(mailOptions);
-    console.log('Order confirmation email sent successfully');
-  } catch (error) {
-    console.error('Error sending order confirmation email:', error);
   }
 };
 

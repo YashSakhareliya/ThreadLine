@@ -21,8 +21,14 @@ const deleteShop = (id) => {
   return api.delete(`/shops/${id}`);
 };
 
+const getNearbyShops = (params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return api.get(`/shops/nearby${queryString ? `?${queryString}` : ''}`);
+};
+
 export default {
   getAllShops,
+  getNearbyShops,
   getShopById,
   createShop,
   updateShop,

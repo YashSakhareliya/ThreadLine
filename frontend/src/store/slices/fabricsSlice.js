@@ -27,7 +27,7 @@ const fabricsSlice = createSlice({
     setFilters: (state, action) => {
       state.filters = { ...state.filters, ...action.payload };
       
-      // Apply filters
+      // Apply filters (city filter is handled server-side, not here)
       let filtered = [...state.fabrics];
       
       if (state.filters.category) {

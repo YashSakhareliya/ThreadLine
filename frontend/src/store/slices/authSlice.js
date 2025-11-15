@@ -3,7 +3,7 @@ import { createSlice } from '@reduxjs/toolkit';
 const initialState = {
   user: null,
   isAuthenticated: false,
-  loading: false,
+  loading: true, // Start with true to handle initial auth check on page load
   error: null,
 };
 
@@ -28,6 +28,7 @@ const authSlice = createSlice({
       state.error = action.payload;
     },
     logout: (state) => {
+      state.loading = false;
       state.isAuthenticated = false;
       state.user = null;
       state.error = null;

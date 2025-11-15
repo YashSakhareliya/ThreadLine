@@ -1,5 +1,6 @@
 import Tailor from '../models/Tailor.js';
 import { validationResult } from 'express-validator';
+import { updateLocationData, extractCoordinates } from '../utils/locationUtils.js';
 
 // @desc    Get all tailors
 // @route   GET /api/v1/tailors
@@ -120,7 +121,11 @@ export const createTailor = async (req, res) => {
     // Add user to req.body
     req.body.owner = req.user.id;
 
-    const tailor = await Tailor.create(req.body);
+    // Process location data if provided
+    const tailorData = await updateLocationData(req.body);
+    // console.log('Creating tailor with data:', tailorData);
+
+    const tailor = await Tailor.create(tailorData);
 
     res.status(201).json({
       success: true,
@@ -158,7 +163,10 @@ export const updateTailor = async (req, res) => {
       });
     }
 
-    tailor = await Tailor.findByIdAndUpdate(req.params.id, req.body, {
+    // Process location data if provided
+    const updateData = await updateLocationData(req.body);
+    
+    tailor = await Tailor.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
       runValidators: true
     });
@@ -266,6 +274,221 @@ export const addTailorReview = async (req, res) => {
     });
   } catch (error) {
     console.error('Add tailor review error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};
+
+// @desc    Get tailors suitable for specific fabric
+// @route   GET /api/v1/tailors/by-fabric
+// @access  Public
+export const getTailorsByFabric = async (req, res) => {
+  try {
+    const { 
+      fabricType, 
+      material, 
+      category, 
+      city, 
+      userLat,
+      userLon,
+      limit = 6 
+    } = req.query;
+
+    if (!fabricType && !material && !category) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide fabric type, material, or category'
+      });
+    }
+
+    // Build query to find relevant tailors
+    let query = { isActive: true };
+    
+    // Match tailors based on specialization that would work with the fabric
+    const fabricSpecializationMap = {
+      // Traditional fabrics
+      'silk': ['Traditional Wear', 'Sarees', 'Lehengas', 'Blouses', 'Formal Wear'],
+      'cotton': ['Casual Wear', 'Shirts', 'Traditional Wear', 'Sarees', 'Blouses'],
+      'linen': ['Casual Wear', 'Shirts', 'Formal Wear'],
+      'chiffon': ['Sarees', 'Lehengas', 'Blouses', 'Traditional Wear'],
+      'georgette': ['Sarees', 'Lehengas', 'Blouses', 'Traditional Wear'],
+      'velvet': ['Traditional Wear', 'Lehengas', 'Formal Wear'],
+      'satin': ['Formal Wear', 'Traditional Wear', 'Lehengas', 'Blouses'],
+      'crepe': ['Formal Wear', 'Casual Wear', 'Traditional Wear'],
+      'wool': ['Suits', 'Formal Wear', 'Traditional Wear'],
+      'polyester': ['Casual Wear', 'Formal Wear', 'Shirts'],
+      'denim': ['Casual Wear', 'Alterations'],
+      'khadi': ['Traditional Wear', 'Casual Wear'],
+      
+      // Fabric categories
+      'traditional': ['Traditional Wear', 'Sarees', 'Lehengas', 'Blouses'],
+      'formal': ['Suits', 'Formal Wear', 'Shirts'],
+      'casual': ['Casual Wear', 'Shirts', 'Alterations'],
+      'ethnic': ['Traditional Wear', 'Sarees', 'Lehengas', 'Blouses'],
+      'western': ['Suits', 'Formal Wear', 'Casual Wear', 'Shirts']
+    };
+
+    let specializationFilter = [];
+    
+    // Check material-based specialization
+    if (material) {
+      const materialLower = material.toLowerCase();
+      if (fabricSpecializationMap[materialLower]) {
+        specializationFilter = [...specializationFilter, ...fabricSpecializationMap[materialLower]];
+      }
+    }
+    
+    // Check fabric type-based specialization
+    if (fabricType) {
+      const typeLower = fabricType.toLowerCase();
+      if (fabricSpecializationMap[typeLower]) {
+        specializationFilter = [...specializationFilter, ...fabricSpecializationMap[typeLower]];
+      }
+    }
+    
+    // Check category-based specialization
+    if (category) {
+      const categoryLower = category.toLowerCase();
+      if (fabricSpecializationMap[categoryLower]) {
+        specializationFilter = [...specializationFilter, ...fabricSpecializationMap[categoryLower]];
+      }
+    }
+    
+    // Remove duplicates
+    specializationFilter = [...new Set(specializationFilter)];
+    
+    // Build OR conditions array
+    let orConditions = [];
+    
+    // Add specialization condition if we have matching specializations
+    if (specializationFilter.length > 0) {
+      orConditions.push({ specialization: { $in: specializationFilter } });
+    }
+    
+    // Add city condition if provided
+    if (city) {
+      orConditions.push({ city: { $regex: new RegExp(`^${city}$`, 'i') } });
+    }
+    
+    // If we have any OR conditions, add them to the query
+    if (orConditions.length > 0) {
+      query.$or = orConditions;
+    }
+
+    // Find matching tailors
+    let tailors = await Tailor.find(query)
+      .populate('owner', 'name email')
+      .sort({ rating: -1, totalReviews: -1 });
+
+    // Convert to plain objects for consistency
+    tailors = tailors.map(tailor => tailor.toObject());
+
+    // Prioritize tailors by city match and rating
+    if (city) {
+      tailors = tailors.sort((a, b) => {
+        const aCityMatch = a.city?.toLowerCase() === city.toLowerCase();
+        const bCityMatch = b.city?.toLowerCase() === city.toLowerCase();
+        
+        // First priority: city match
+        if (aCityMatch && !bCityMatch) return -1;
+        if (!aCityMatch && bCityMatch) return 1;
+        
+        // Second priority: rating (for tailors in same priority group)
+        if ((a.rating || 0) !== (b.rating || 0)) {
+          return (b.rating || 0) - (a.rating || 0);
+        }
+        
+        // Third priority: total reviews
+        return (b.totalReviews || 0) - (a.totalReviews || 0);
+      });
+    }
+
+    // Apply limit after sorting
+    tailors = tailors.slice(0, parseInt(limit));
+
+    console.log(`Found ${tailors.length} tailors for city: ${city}, material: ${material}, category: ${category}`);
+    console.log('Tailors order:', tailors.map(t => ({ name: t.name, city: t.city, rating: t.rating })));
+
+    res.json({
+      success: true,
+      count: tailors.length,
+      data: tailors
+    });
+
+  } catch (error) {
+    console.error('Error getting tailors by fabric:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};
+
+// @desc    Get nearby tailors (distance calculation removed)
+// @route   GET /api/v1/tailors/nearby
+// @access  Public
+export const getNearbyTailors = async (req, res) => {
+  try {
+    const { 
+      city, 
+      specialization, 
+      minRating, 
+      search, 
+      sortBy = 'rating', 
+      page = 1, 
+      limit = 10 
+    } = req.query;
+
+    // Build query
+    let query = { isActive: true };
+    
+    if (city) {
+      query.$or = [
+        { city: { $regex: city, $options: 'i' } },
+        { 'address.city': { $regex: city, $options: 'i' } }
+      ];
+    }
+    
+    if (specialization) {
+      query.specialization = { $in: [specialization] };
+    }
+    
+    if (minRating) {
+      query.rating = { $gte: parseFloat(minRating) };
+    }
+    
+    if (search) {
+      query.$text = { $search: search };
+    }
+
+    // Get tailors
+    let tailors = await Tailor.find(query)
+      .populate('owner', 'name email')
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    // Convert to plain objects and sort
+    tailors = tailors.map(tailor => tailor.toObject());
+    
+    if (sortBy === 'rating') {
+      tailors.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    } else {
+      tailors.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+
+    const total = await Tailor.countDocuments(query);
+
+    res.json({
+      success: true,
+      count: tailors.length,
+      total,
+      data: tailors
+    });
+
+  } catch (error) {
+    console.error('Error getting nearby tailors:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'

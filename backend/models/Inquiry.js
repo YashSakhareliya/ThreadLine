@@ -55,7 +55,7 @@ const inquirySchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['new', 'replied', 'closed'],
+    enum: ['new', 'read', 'replied', 'closed'],
     default: 'new'
   },
   messages: [messageSchema],

@@ -56,11 +56,31 @@ const tailorSchema = new mongoose.Schema({
   phone: {
     type: String,
     required: [true, 'Phone number is required'],
-    match: [/^\+?[1-9]\d{1,14}$/, 'Please enter a valid phone number']
   },
   city: {
     type: String,
     required: [true, 'City is required']
+  },
+  location: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point'
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      index: '2dsphere'
+    }
+  },
+  latitude: {
+    type: Number,
+    min: -90,
+    max: 90
+  },
+  longitude: {
+    type: Number,
+    min: -180,
+    max: 180
   },
   specialization: [{
     type: String,
@@ -116,11 +136,20 @@ const tailorSchema = new mongoose.Schema({
     end: String
   },
   address: {
-    street: String,
-    city: String,
-    state: String,
-    zipCode: String,
-    country: { type: String, default: 'India' }
+    type: String
+  },
+  city: {
+    type: String,
+  },
+  state: {
+    type: String
+  },
+  zipCode: {
+    type: String
+  },
+  country: {
+    type: String,
+    default: 'India'
   }
 }, {
   timestamps: true

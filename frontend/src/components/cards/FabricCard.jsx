@@ -1,41 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ShoppingCart, Package, Palette, Ruler, Plus, Minus } from 'lucide-react';
+import { Eye, Package, Palette, Ruler } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useDispatch, useSelector } from 'react-redux';
-import { addToCartAsync } from '../../store/slices/cartSlice';
 
 const FabricCard = ({ fabric }) => {
-  const dispatch = useDispatch();
   const { user } = useAuth();
-  const { loading } = useSelector(state => state.cart);
-  const [quantity, setQuantity] = useState(1);
-
-  const handleAddToCart = () => {
-    if (user && user.role === 'customer') {
-      dispatch(addToCartAsync({ fabricId: fabric._id, quantity }));
-    }
-  };
-
-  const increaseQuantity = () => {
-    if (quantity < fabric.stock) {
-      setQuantity(prev => prev + 1);
-    }
-  };
-
-  const decreaseQuantity = () => {
-    if (quantity > 1) {
-      setQuantity(prev => prev - 1);
-    }
-  };
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -5 }}
-      className="card group"
+      className="card group flex flex-col"
     >
       <div className="relative overflow-hidden rounded-xl mb-4">
         <img
@@ -53,7 +30,7 @@ const FabricCard = ({ fabric }) => {
         )}
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-3 flex-grow">
         <Link to={`/fabric/${fabric._id}`}>
           <h3 className="text-lg font-bold text-slate-800 group-hover:text-customer-primary transition-colors duration-300 cursor-pointer">
             {fabric.name}
@@ -84,44 +61,23 @@ const FabricCard = ({ fabric }) => {
             <span className="font-semibold">{fabric.material}</span>
           </div>
         </div>
+      </div>
 
-        {user && user.role === 'customer' && (
-          <div className="space-y-3">
-            {/* Quantity Selector */}
-            <div className="flex items-center justify-center space-x-3">
-              <button
-                onClick={decreaseQuantity}
-                disabled={quantity <= 1}
-                className="w-8 h-8 rounded-full border border-customer-primary text-customer-primary hover:bg-customer-primary hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              >
-                <Minus className="w-4 h-4" />
-              </button>
-              <span className="text-lg font-semibold min-w-[2rem] text-center">{quantity}</span>
-              <button
-                onClick={increaseQuantity}
-                disabled={quantity >= fabric.stock}
-                className="w-8 h-8 rounded-full border border-customer-primary text-customer-primary hover:bg-customer-primary hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-            
-            {/* Add to Cart Button */}
+      {user && user.role === 'customer' && (
+        <div className="space-y-3 mt-4">
+          {/* View Fabric Button */}
+          <Link to={`/fabric/${fabric._id}`}>
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={handleAddToCart}
-              disabled={fabric.stock === 0 || loading}
-              className="w-full flex items-center justify-center space-x-2 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center space-x-2 btn-primary"
             >
-              <ShoppingCart className="w-4 h-4" />
-              <span>
-                {loading ? 'Adding...' : fabric.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
-              </span>
+              <Eye className="w-4 h-4" />
+              <span>View Fabric</span>
             </motion.button>
-          </div>
-        )}
-      </div>
+          </Link>
+        </div>
+      )}
     </motion.div>
   );
 };

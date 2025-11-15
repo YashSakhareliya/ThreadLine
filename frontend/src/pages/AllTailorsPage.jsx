@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 const AllTailorsPage = () => {
   const dispatch = useDispatch();
   const { filteredTailors, filters } = useSelector(state => state.tailors);
+  const { user, isAuthenticated } = useSelector(state => state.auth);
   const [viewMode, setViewMode] = useState('grid');
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -22,8 +23,14 @@ const AllTailorsPage = () => {
     const fetchTailors = async () => {
       try {
         setLoading(true);
+        
+        // Fetch all tailors
         const res = await tailorService.getAllTailors();
+        
         const tailors = res.data.data;
+        console.log('Tailors received:', tailors.length);
+        console.log('Sample tailor data:', tailors[0]);
+        
         dispatch(setInitialTailors(tailors));
         setCities([...new Set(tailors.map(t => t.city))]);
         setSpecializations([...new Set(tailors.flatMap(t => t.specialization))]);
@@ -36,7 +43,7 @@ const AllTailorsPage = () => {
       }
     };
     fetchTailors();
-  }, [dispatch]);
+  }, [dispatch, isAuthenticated, user]);
 
   const handleFilterChange = (key, value) => {
     dispatch(setFilters({ [key]: value }));

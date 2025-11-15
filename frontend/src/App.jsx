@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { store } from './store';
 import { AuthProvider } from './contexts/AuthContext';
-import { CartProvider } from './contexts/CartContext';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import ProtectedRoute from './components/common/ProtectedRoute';
@@ -17,9 +16,6 @@ import AllTailorsPage from './pages/AllTailorsPage';
 import TailorPortfolioPage from './pages/TailorPortfolioPage';
 import FabricDetailsPage from './pages/FabricDetailsPage';
 import ShopDetailsPage from './pages/ShopDetailsPage';
-import CartPage from './pages/CartPage';
-import CheckoutPage from './pages/CheckoutPage';
-import OrdersPage from './pages/OrdersPage';
 import CustomerDashboard from './pages/customer/CustomerDashboard';
 import CustomerProfile from './pages/customer/CustomerProfile';
 import TailorDashboard from './pages/tailor/TailorDashboard';
@@ -31,15 +27,12 @@ import UnauthorizedPage from './pages/UnauthorizedPage';
 // Import CSS
 import './index.css';
 
-function App() {
+// Component to handle location tracking
+function AppContent() {
   return (
-    <Provider store={store}>
-      <AuthProvider>
-        <CartProvider>
-          <Router>
-            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-              <Navbar />
-              <Routes>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <Navbar />
+      <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<HomePage />} />
                 <Route path="/auth" element={<AuthPage />} />
@@ -47,14 +40,6 @@ function App() {
                 <Route path="/unauthorized" element={<UnauthorizedPage />} />
                 
                 {/* Customer Routes */}
-                <Route 
-                  path="/cart" 
-                  element={
-                    <ProtectedRoute allowedRoles={['customer']}>
-                      <CartPage />
-                    </ProtectedRoute>
-                  } 
-                />
                 <Route 
                   path="/shops" 
                   element={
@@ -104,22 +89,6 @@ function App() {
                   } 
                 />
                 <Route 
-                  path="/checkout" 
-                  element={
-                    <ProtectedRoute allowedRoles={['customer']}>
-                      <CheckoutPage />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/orders" 
-                  element={
-                    <ProtectedRoute allowedRoles={['customer']}>
-                      <OrdersPage />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
                   path="/customer/dashboard" 
                   element={
                     <ProtectedRoute allowedRoles={['customer']}>
@@ -161,8 +130,16 @@ function App() {
               </Routes>
               <Footer />
             </div>
-          </Router>
-        </CartProvider>
+  );
+}
+
+function App() {
+  return (
+    <Provider store={store}>
+      <AuthProvider>
+        <Router>
+          <AppContent />
+        </Router>
       </AuthProvider>
     </Provider>
   );

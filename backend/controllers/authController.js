@@ -22,14 +22,14 @@ export const register = async (req, res) => {
       });
     }
 
-    const { name, email, password, role, phone, address } = req.body;
+    const { name, email, password, role, phone, city } = req.body;
 
     // Check if user exists
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email, role });
     if (userExists) {
       return res.status(400).json({
         success: false,
-        message: 'User already exists with this email'
+        message: 'User already exists with this email or Role'
       });
     }
 
@@ -38,13 +38,14 @@ export const register = async (req, res) => {
       name,
       email,
       password,
-      role: role || 'customer',
+      role: role,
       phone,
-      address
+      city: city
     });
 
     if (user) {
       let additionalData = {};
+      console.log('User registered:', user);
 
       // Create tailor profile if user role is tailor
       if (user.role === 'tailor') {
@@ -54,12 +55,11 @@ export const register = async (req, res) => {
             name: user.name,
             bio: `Professional tailor with expertise in various clothing alterations and custom tailoring.`,
             email: user.email,
-            phone: user.phone || '+1234567890',
-            city: user.address?.city || 'Not specified',
+            phone: user.phone ,
+            city: user.city,
             specialization: ['Alterations'],
             experience: 0,
-            priceRange: '$50-$200',
-            address: user.address || {}
+            priceRange: '50-200',
           });
           additionalData.tailorProfile = tailorProfile;
         } catch (tailorError) {
@@ -76,11 +76,8 @@ export const register = async (req, res) => {
             name: `${user.name}'s Fabric Shop`,
             description: 'Quality fabrics and materials for all your tailoring needs.',
             email: user.email,
-            phone: user.phone || '+1234567890',
-            address: user.address?.street || 'Not specified',
-            city: user.address?.city || 'Not specified',
-            state: user.address?.state || 'Not specified',
-            zipCode: user.address?.zipCode || '000000'
+            phone: user.phone ,
+            city: user.city
           });
           additionalData.shopProfile = shopProfile;
         } catch (shopError) {
@@ -96,8 +93,8 @@ export const register = async (req, res) => {
             owner: user._id,
             name: user.name,
             email: user.email,
-            phone: user.phone || '+1234567890',
-            city: user.address?.city || 'Not specified'
+            phone: user.phone,
+            city: user.city
           });
           additionalData.customerProfile = customerProfile;
         } catch (customerError) {
@@ -153,10 +150,10 @@ export const login = async (req, res) => {
       });
     }
 
-    const { email, password } = req.body;
-
+    const { email, password, role } = req.body;
+    console.log(role)
     // Check for user
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email, role }).select('+password');
     if (!user) {
       return res.status(401).json({
         success: false,

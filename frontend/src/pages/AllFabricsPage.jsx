@@ -19,7 +19,13 @@ const AllFabricsPage = () => {
     const fetchFabrics = async () => {
       try {
         setLoading(true);
-        const res = await fabricService.getAllFabrics();
+        // Build query params including city filter
+        const params = {};
+        if (filters.city) {
+          params.city = filters.city;
+        }
+        
+        const res = await fabricService.getAllFabrics(params);
         dispatch(setInitialFabrics(res.data.data || []));
         setError(null);
       } catch (err) {
@@ -30,7 +36,7 @@ const AllFabricsPage = () => {
       }
     };
     fetchFabrics();
-  }, [dispatch]);
+  }, [dispatch, filters.city]);
 
   const categories = [...new Set(filteredFabrics.map(f => f.category))];
   const colors = [...new Set(filteredFabrics.map(f => f.color))];
