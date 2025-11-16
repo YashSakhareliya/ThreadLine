@@ -31,7 +31,7 @@ const app = express();
 // CORS configuration (must be before any other middleware/routes)
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://threadline.com', 'https://www.threadline.com'] 
+    ? ['https://threadline.com', 'https://www.threadline.com', process.env.FRONTEND_URL] 
     : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174'],
   credentials: true,
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
