@@ -1,16 +1,16 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { 
-  Scissors, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Facebook, 
-  Twitter, 
-  Instagram, 
-  Linkedin 
-} from 'lucide-react';
+import React from "react";
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import {
+  Scissors,
+  Mail,
+  Phone,
+  MapPin,
+  Facebook,
+  Twitter,
+  Instagram,
+  Linkedin,
+} from "lucide-react";
 
 const Footer = () => {
   return (
@@ -32,8 +32,9 @@ const Footer = () => {
               </span>
             </div>
             <p className="text-slate-600 text-sm">
-              Connecting customers with the best fabric shops and tailors across India. 
-              Quality fabrics, skilled craftsmanship, delivered to your doorstep.
+              Connecting customers with the best fabric shops and tailors across
+              India. Discover quality fabrics and skilled craftsmanship near
+              you.
             </p>
             <div className="flex space-x-4">
               {[Facebook, Twitter, Instagram, Linkedin].map((Icon, index) => (
@@ -51,13 +52,15 @@ const Footer = () => {
 
           {/* Quick Links */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-slate-800">Quick Links</h3>
+            <h3 className="text-lg font-semibold text-slate-800">
+              Quick Links
+            </h3>
             <div className="space-y-2">
               {[
-                { name: 'All Shops', path: '/shops' },
-                { name: 'Find Tailors', path: '/tailors' },
-                { name: 'About Us', path: '/about' },
-                { name: 'Contact', path: '/contact' }
+                { name: "All Shops", path: "/shops" },
+                { name: "All Fabrics", path: "/fabrics" },
+                { name: "Find Tailors", path: "/tailors" },
+                { name: "Sign In", path: "/auth" },
               ].map((link) => (
                 <Link
                   key={link.name}
@@ -70,17 +73,17 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Services */}
+          {/* Features */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-slate-800">Services</h3>
+            <h3 className="text-lg font-semibold text-slate-800">Features</h3>
             <div className="space-y-2">
               {[
-                'Fabric Shopping',
-                'Custom Tailoring',
-                'City-wise Search',
-                'Secure Payments',
-                'Order Tracking',
-                'Quality Assurance'
+                "Browse Fabrics",
+                "Find Tailors",
+                "City-wise Search",
+                "Shop Ratings",
+                "Tailor Portfolios",
+                "Customer Reviews",
               ].map((service) => (
                 <p key={service} className="text-slate-600 text-sm">
                   {service}
@@ -95,7 +98,9 @@ const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <Mail className="w-4 h-4 text-customer-primary" />
-                <span className="text-slate-600 text-sm">support@threadline.com</span>
+                <span className="text-slate-600 text-sm">
+                  support@threadline.com
+                </span>
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="w-4 h-4 text-customer-primary" />
@@ -109,18 +114,10 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="border-t border-white/20 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
+        <div className="border-t border-white/20 mt-8 pt-8 text-center">
           <p className="text-slate-600 text-sm">
             © 2024 ThreadLine. All rights reserved.
           </p>
-          <div className="flex space-x-6 mt-4 md:mt-0">
-            <Link to="/privacy" className="text-slate-600 hover:text-customer-primary text-sm transition-colors duration-300">
-              Privacy Policy
-            </Link>
-            <Link to="/terms" className="text-slate-600 hover:text-customer-primary text-sm transition-colors duration-300">
-              Terms of Service
-            </Link>
-          </div>
         </div>
       </div>
     </footer>

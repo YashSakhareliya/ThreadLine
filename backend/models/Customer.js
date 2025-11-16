@@ -116,17 +116,7 @@ const customerSchema = new mongoose.Schema({
     min: -180,
     max: 180
   },
-  location: {
-    type: {
-      type: String,
-      enum: ['Point'],
-      default: 'Point'
-    },
-    coordinates: {
-      type: [Number], // [longitude, latitude]
-      index: '2dsphere'
-    }
-  },
+
   lastLocationUpdate: {
     type: Date
   },
@@ -152,7 +142,6 @@ customerSchema.index({
 // Index for filtering
 customerSchema.index({ city: 1, isActive: 1 });
 
-// Geospatial index for location-based queries
-customerSchema.index({ location: '2dsphere' });
+
 
 export default mongoose.model('Customer', customerSchema);

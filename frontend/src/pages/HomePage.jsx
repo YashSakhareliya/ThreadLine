@@ -1,53 +1,55 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { 
-  Search, 
-  MapPin, 
-  ShoppingBag, 
-  Scissors, 
-  Shield, 
+import React from "react";
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import {
+  Search,
+  MapPin,
+  ShoppingBag,
+  Scissors,
+  Shield,
   Star,
   ArrowRight,
   Users,
   Store,
-  Truck
-} from 'lucide-react';
-import SearchBar from '../components/common/SearchBar';
+  Truck,
+} from "lucide-react";
+import SearchBar from "../components/common/SearchBar";
 
 const HomePage = () => {
   const features = [
     {
       icon: MapPin,
       title: "City-Based Search",
-      description: "Find shops and tailors in your city with precise location-based results"
+      description:
+        "Find shops and tailors in your city with precise location-based results",
     },
     {
       icon: ShoppingBag,
-      title: "Online Fabric Shopping",
-      description: "Browse and purchase premium fabrics from verified shops across India"
-    },
-    {
-      icon: Shield,
-      title: "Secure Payments",
-      description: "Safe and secure transactions with Razorpay integration"
+      title: "Browse Premium Fabrics",
+      description: "Explore premium fabrics from verified shops across India",
     },
     {
       icon: Scissors,
       title: "Expert Tailors",
-      description: "Connect with skilled tailors and view their portfolios and pricing"
-    }
+      description:
+        "Connect with skilled tailors and view their portfolios and pricing",
+    },
+    {
+      icon: Star,
+      title: "Verified Reviews",
+      description: "Read authentic reviews and ratings from real customers",
+    },
   ];
 
   const stats = [
-    { number: "500+", label: "Fabric Shops", icon: Store },
-    { number: "1000+", label: "Expert Tailors", icon: Scissors },
-    { number: "50+", label: "Cities Covered", icon: MapPin },
-    { number: "10K+", label: "Happy Customers", icon: Users }
+    { number: "Browse", label: "Fabric Shops", icon: Store },
+    { number: "Connect", label: "Expert Tailors", icon: Scissors },
+    { number: "Search", label: "By City", icon: MapPin },
+    { number: "View", label: "Portfolios", icon: Users },
   ];
 
   const handleSearch = ({ query, city }) => {
-    console.log('Search:', { query, city });
+    console.log("Search:", { query, city });
     // Navigate to search results
   };
 
@@ -58,8 +60,11 @@ const HomePage = () => {
         {/* Background Elements */}
         <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50" />
         <div className="absolute top-20 left-10 w-72 h-72 bg-customer-primary/10 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-customer-secondary/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
-        
+        <div
+          className="absolute bottom-20 right-10 w-96 h-96 bg-customer-secondary/10 rounded-full blur-3xl animate-float"
+          style={{ animationDelay: "2s" }}
+        />
+
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -69,7 +74,7 @@ const HomePage = () => {
           >
             {/* Main Heading */}
             <div className="space-y-4">
-              <motion.h1 
+              <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
@@ -79,15 +84,15 @@ const HomePage = () => {
                   ThreadLine
                 </span>
               </motion.h1>
-              
-              <motion.p 
+
+              <motion.p
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
                 className="text-xl md:text-2xl text-slate-600 max-w-3xl mx-auto leading-relaxed"
               >
-               Connect with the best fabric shops and tailors in your city. 
-                Quality fabrics, skilled craftsmanship, find the nearest to you.
+                Discover the best fabric shops and tailors in your city. Browse
+                quality fabrics and connect with skilled craftsmen near you.
               </motion.p>
             </div>
 
@@ -98,7 +103,7 @@ const HomePage = () => {
               transition={{ delay: 0.6 }}
               className="max-w-4xl mx-auto"
             >
-              <SearchBar 
+              <SearchBar
                 onSearch={handleSearch}
                 placeholder="Search shops & tailors by city..."
               />
@@ -116,10 +121,10 @@ const HomePage = () => {
                 className="group flex items-center space-x-2 btn-primary text-lg px-8 py-4"
               >
                 <ShoppingBag className="w-5 h-5" />
-                <span>Shop Now</span>
+                <span>Browse Shops</span>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
               </Link>
-              
+
               <Link
                 to="/tailors"
                 className="group flex items-center space-x-2 btn-secondary text-lg px-8 py-4"
@@ -146,8 +151,9 @@ const HomePage = () => {
               Why Choose ThreadLine?
             </h2>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              We connect you with verified fabric shops and skilled tailors across India, 
-              making quality craftsmanship accessible to everyone.
+              We help you discover verified fabric shops and skilled tailors
+              across India, making it easy to find quality craftsmanship near
+              you.
             </p>
           </motion.div>
 
@@ -168,9 +174,7 @@ const HomePage = () => {
                 <h3 className="text-xl font-bold text-slate-800 mb-3">
                   {feature.title}
                 </h3>
-                <p className="text-slate-600">
-                  {feature.description}
-                </p>
+                <p className="text-slate-600">{feature.description}</p>
               </motion.div>
             ))}
           </div>
@@ -196,9 +200,7 @@ const HomePage = () => {
                 <div className="text-3xl md:text-4xl font-bold text-slate-800 mb-2">
                   {stat.number}
                 </div>
-                <div className="text-slate-600 font-semibold">
-                  {stat.label}
-                </div>
+                <div className="text-slate-600 font-semibold">{stat.label}</div>
               </motion.div>
             ))}
           </div>
@@ -218,7 +220,8 @@ const HomePage = () => {
               Ready to Get Started?
             </h2>
             <p className="text-xl mb-8 opacity-90">
-              Join thousands of satisfied customers who trust ThreadLine for their fabric and tailoring needs.
+              Join ThreadLine to discover quality fabrics and skilled tailors in
+              your area.
             </p>
             <Link
               to="/auth"
