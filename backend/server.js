@@ -29,10 +29,16 @@ connectDB();
 const app = express();
 
 // CORS configuration (must be before any other middleware/routes)
+const allowedOrigins = process.env.NODE_ENV === 'production' 
+  ? [
+      process.env.FRONTEND_URL,
+      'https://threadline.com', 
+      'https://www.threadline.com'
+    ].filter(Boolean) // Remove undefined values
+  : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174'];
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://threadline.com', 'https://www.threadline.com', process.env.FRONTEND_URL] 
-    : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174'],
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization']
@@ -40,9 +46,7 @@ app.use(cors({
 
 // Explicitly handle preflight
 app.options('*', cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://threadline.com', 'https://www.threadline.com'] 
-    : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174'],
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization']
