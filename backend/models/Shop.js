@@ -43,17 +43,6 @@ const shopSchema = new mongoose.Schema({
     type: String,
     default: 'India'
   },
-  location: {
-    type: {
-      type: String,
-      enum: ['Point'],
-      default: 'Point'
-    },
-    coordinates: {
-      type: [Number], // [longitude, latitude]
-      index: '2dsphere'
-    }
-  },
   latitude: {
     type: Number,
     min: -90,

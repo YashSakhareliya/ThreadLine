@@ -96,7 +96,7 @@ const AuthPage = () => {
   const getDashboardPath = (role) => {
     switch (role) {
       case "customer":
-        return "/customer/dashboard";
+        return "/shops";
       case "tailor":
         return "/tailor/dashboard";
       case "shop":
