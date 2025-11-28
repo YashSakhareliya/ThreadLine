@@ -36,18 +36,7 @@ const Footer = () => {
               India. Discover quality fabrics and skilled craftsmanship near
               you.
             </p>
-            <div className="flex space-x-4">
-              {[Facebook, Twitter, Instagram, Linkedin].map((Icon, index) => (
-                <motion.a
-                  key={index}
-                  href="#"
-                  whileHover={{ scale: 1.1, y: -2 }}
-                  className="w-8 h-8 glass rounded-lg flex items-center justify-center text-slate-600 hover:text-customer-primary transition-colors duration-300"
-                >
-                  <Icon className="w-4 h-4" />
-                </motion.a>
-              ))}
-            </div>
+         
           </div>
 
           {/* Quick Links */}
@@ -104,11 +93,11 @@ const Footer = () => {
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="w-4 h-4 text-customer-primary" />
-                <span className="text-slate-600 text-sm">+91 98765 43210</span>
+                <span className="text-slate-600 text-sm">+91 7016905292</span>
               </div>
               <div className="flex items-center space-x-3">
                 <MapPin className="w-4 h-4 text-customer-primary" />
-                <span className="text-slate-600 text-sm">Mumbai, India</span>
+                <span className="text-slate-600 text-sm">vadodara, India</span>
               </div>
             </div>
           </div>

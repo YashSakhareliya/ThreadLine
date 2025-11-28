@@ -252,18 +252,7 @@ const AuthPage = () => {
                   )}
                 </button>
               </div>
-              {/* Forgot Password Link - Only show for login */}
-              {isLogin && (
-                <div className="text-right">
-                  <button
-                    type="button"
-                    onClick={() => setShowForgotPassword(true)}
-                    className="text-sm text-blue-600 hover:text-blue-500 transition-colors duration-300"
-                  >
-                    Forgot your password?
-                  </button>
-                </div>
-              )}
+             
             </div>
 
             <AnimatePresence>
