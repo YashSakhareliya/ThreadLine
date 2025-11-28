@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu,
   X,
@@ -9,9 +9,9 @@ import {
   Search,
   Scissors,
   Store,
-  Users
-} from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+  Users,
+} from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,34 +22,46 @@ const Navbar = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    navigate("/");
     setShowUserMenu(false);
   };
 
   const getRoleColor = (role) => {
     switch (role) {
-      case 'customer': return 'from-customer-primary to-customer-secondary';
-      case 'tailor': return 'from-tailor-primary to-tailor-secondary';
-      case 'shop': return 'from-shop-primary to-shop-secondary';
-      default: return 'from-customer-primary to-customer-secondary';
+      case "customer":
+        return "from-customer-primary to-customer-secondary";
+      case "tailor":
+        return "from-tailor-primary to-tailor-secondary";
+      case "shop":
+        return "from-shop-primary to-shop-secondary";
+      default:
+        return "from-customer-primary to-customer-secondary";
     }
   };
 
   const getRoleIcon = (role) => {
     switch (role) {
-      case 'customer': return <Users className="w-4 h-4" />;
-      case 'tailor': return <Scissors className="w-4 h-4" />;
-      case 'shop': return <Store className="w-4 h-4" />;
-      default: return <User className="w-4 h-4" />;
+      case "customer":
+        return <Users className="w-4 h-4" />;
+      case "tailor":
+        return <Scissors className="w-4 h-4" />;
+      case "shop":
+        return <Store className="w-4 h-4" />;
+      default:
+        return <User className="w-4 h-4" />;
     }
   };
 
   const getDashboardPath = (role) => {
     switch (role) {
-      case 'customer': return '/customer/dashboard';
-      case 'tailor': return '/tailor/dashboard';
-      case 'shop': return '/shop/dashboard';
-      default: return '/';
+      case "customer":
+        return "/customer/dashboard";
+      case "tailor":
+        return "/tailor/dashboard";
+      case "shop":
+        return "/shop/dashboard";
+      default:
+        return "/";
     }
   };
 
@@ -77,7 +89,7 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            {(!user || user.role === 'customer') && (
+            {(!user || user.role === "customer") && (
               <>
                 <Link
                   to="/shops"
@@ -102,14 +114,15 @@ const Navbar = () => {
               </>
             )}
 
-
             {user ? (
               <div className="flex items-center space-x-4">
                 <div className="relative">
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     onClick={() => setShowUserMenu(!showUserMenu)}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-xl bg-gradient-to-r ${getRoleColor(user.role)} text-white shadow-lg`}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-xl bg-gradient-to-r ${getRoleColor(
+                      user.role
+                    )} text-white shadow-lg`}
                   >
                     {getRoleIcon(user.role)}
                     <span className="capitalize">{user.role}</span>
@@ -123,14 +136,16 @@ const Navbar = () => {
                         exit={{ opacity: 0, y: -10 }}
                         className="absolute right-0 mt-2 w-48 glass rounded-xl shadow-xl py-2"
                       >
-                        <Link
-                          to={getDashboardPath(user.role)}
-                          className="block px-4 py-2 text-slate-700 hover:bg-white/20 transition-colors duration-300"
-                          onClick={() => setShowUserMenu(false)}
-                        >
-                          Dashboard
-                        </Link>
-                        {user.role === 'customer' && (
+                        {user.role !== "customer" && (
+                          <Link
+                            to={getDashboardPath(user.role)}
+                            className="block px-4 py-2 text-slate-700 hover:bg-white/20 transition-colors duration-300"
+                            onClick={() => setShowUserMenu(false)}
+                          >
+                            Dashboard
+                          </Link>
+                        )}
+                        {user.role === "customer" && (
                           <>
                             <Link
                               to="/customer/profile"
@@ -161,10 +176,7 @@ const Navbar = () => {
                 >
                   Login
                 </Link>
-                <Link
-                  to="/auth"
-                  className="btn-primary"
-                >
+                <Link to="/auth" className="btn-primary">
                   Get Started
                 </Link>
               </div>
@@ -178,7 +190,11 @@ const Navbar = () => {
               onClick={() => setIsOpen(!isOpen)}
               className="p-2 text-slate-700"
             >
-              {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {isOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
             </motion.button>
           </div>
         </div>
@@ -189,12 +205,12 @@ const Navbar = () => {
         {isOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
+            animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             className="md:hidden glass border-t border-white/20"
           >
             <div className="px-4 py-4 space-y-4">
-              {(!user || user.role === 'customer') && (
+              {(!user || user.role === "customer") && (
                 <>
                   <Link
                     to="/shops"
@@ -222,17 +238,18 @@ const Navbar = () => {
                 </>
               )}
 
-
               {user ? (
                 <>
-                  <Link
-                    to={getDashboardPath(user.role)}
-                    className="block text-slate-700 hover:text-customer-primary transition-colors duration-300"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Dashboard
-                  </Link>
-                  {user.role === 'customer' && (
+                  {user.role !== "customer" && (
+                    <Link
+                      to={getDashboardPath(user.role)}
+                      className="block text-slate-700 hover:text-customer-primary transition-colors duration-300"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
+                  )}
+                  {user.role === "customer" && (
                     <>
                       <Link
                         to="/customer/profile"

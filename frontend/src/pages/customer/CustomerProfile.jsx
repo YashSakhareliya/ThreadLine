@@ -1,33 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin
-} from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-import { cities } from '../../data/mockData';
-import customerService from '../../services/customerService';
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { User, Mail, Phone, MapPin } from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
+import { cities } from "../../data/mockData";
+import customerService from "../../services/customerService";
 
 const CustomerProfile = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [customerProfile, setCustomerProfile] = useState(null);
-  
+
   const [profileData, setProfileData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    city: ''
+    name: "",
+    email: "",
+    phone: "",
+    city: "",
   });
 
   // Fetch customer profile
   useEffect(() => {
     const fetchCustomerData = async () => {
       if (!user?._id) return;
-      
+
       try {
         setLoading(true);
         const profileResponse = await customerService.getCustomerProfile();
@@ -36,17 +31,17 @@ const CustomerProfile = () => {
           const profile = profileResponse.data;
           setCustomerProfile(profile);
           setProfileData({
-            name: profile.name || '',
-            email: profile.email || '',
-            phone: profile.phone || '',
-            city: profile.city || ''
+            name: profile.name || "",
+            email: profile.email || "",
+            phone: profile.phone || "",
+            city: profile.city || "",
           });
         }
 
         setError(null);
       } catch (err) {
-        console.error('Error fetching customer data:', err);
-        setError('Failed to load profile data');
+        console.error("Error fetching customer data:", err);
+        setError("Failed to load profile data");
       } finally {
         setLoading(false);
       }
@@ -71,8 +66,8 @@ const CustomerProfile = () => {
       <div className="min-h-screen pt-20 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="btn-primary"
           >
             Retry
@@ -94,7 +89,9 @@ const CustomerProfile = () => {
           <div className="w-24 h-24 bg-gradient-to-r from-customer-primary to-customer-secondary rounded-full flex items-center justify-center mx-auto mb-4">
             <User className="w-12 h-12 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-slate-800">{customerProfile?.name}</h1>
+          <h1 className="text-3xl font-bold text-slate-800">
+            {customerProfile?.name}
+          </h1>
           <p className="text-slate-600">{customerProfile?.email}</p>
         </motion.div>
 
@@ -104,8 +101,10 @@ const CustomerProfile = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <div className="card">
-            <h2 className="text-2xl font-bold text-slate-800 mb-6">Profile Details</h2>
+          <div className="glass rounded-2xl p-6 shadow-xl">
+            <h2 className="text-2xl font-bold text-slate-800 mb-6">
+              Profile Details
+            </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
